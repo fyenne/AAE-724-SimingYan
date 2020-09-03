@@ -18,5 +18,8 @@ is a document combining powerplant data and covid data. plus regression works.
 is the data in my computer, it is little bit messed up. But the final dataset named as
 + "pp_data"
 
+@@ econ.Rmd @@
+is webscraping script which i used to scrap Shanxi Bureau of statistics. Unluckily not sufficient data can be used.
+
 # please ignore pppj.Rmd & Untitled.Rmd 
 ``` 
