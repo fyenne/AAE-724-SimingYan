@@ -1,0 +1,426 @@
+---
+title: "Covid-19"
+author: "Siming Yan"
+date:   "`r format(Sys.time(), '%d %B, %Y')`"
+output:
+  html_document:
+    theme: spacelab
+    keep_md: true
+    toc: yes
+    toc_float: true
+    highlight: haddock
+    
+---
+
+<html>
+<style> 
+div.bgm { background-color:#e6fff0; border-radius: 7px; padding: 10px;} 
+.ans {
+  color: purple;
+  font-weight: bold;
+}
+#main { 
+    color: #2cb061; 
+}
+</style>
+
+<div class = "bgm">
+
+<ul id="main">
+
+
+```{r setup, echo=FALSE, cache=FALSE, include = F}
+library(knitr)
+library(rmdformats)
+
+## Global options
+options(max.print="75")
+knitr::opts_chunk$set(
+	fig.width = 7,
+	message = FALSE,
+	warning = FALSE,
+	cache = TRUE,
+	comment = NA,
+	dpi = 300,
+	prompt = FALSE,
+	tidy = TRUE
+)
+opts_knit$set(width=75)
+# knitr::opts_chunk$set()
+options(digits=5)
+options(scipen=5)
+knitr::opts_chunk$set(warning = F, message=F)
+
+```
+
+### set
+ 
+```{r setup2, include=FALSE}
+
+library(knitr)
+library(dplyr)
+library(tidyr)
+library(lubridate)
+library(scales)
+library(stargazer)
+library(tidyverse)
+# library(car)
+library(formatR)
+# library(plm)
+# library(lfe)
+library(data.table)
+# library(mlogit)
+# library(lmtest) #for coeftest() and bptest().
+# library(broom) #for glance() and tidy()
+# library(RCurl)# For the robust SE method 1
+# library(sandwich)
+library(texreg) 
+library(mice) #check NA
+# library(MatchIt)
+library(ggthemes)
+library(RColorBrewer)
+library(readxl)
+library(openxlsx)
+library(zoo)
+library(pinyin)
+library(ggthemr)
+library(kableExtra)
+library(plotly)
+```
+
+```{r functions, warning=F, message=F, include = F}
+kbt <- function(...){
+  knitr::kable(..., format.args = list(big.mark = ',', scientific = F)) %>%
+    kableExtra::kable_styling(c("striped", "hover", "condensed"),
+                               full_width = F,
+                               position = "center",
+                               row_label_position = "c") %>%
+   row_spec(0, bold = T, color = "white", background = "#004d1f")
+}
+
+gpt <- function(...){
+  ggplot2::ggplot(...) + 
+    theme_minimal() +
+    theme(plot.title = element_text(face = "bold", size = 14, hjust = 0.5),
+      plot.subtitle = element_text(face = "italic", size = 12, hjust = 0.5), 
+      axis.text.x = element_text(angle = 0, hjust = 0.5))
+}
+
+stg <- function(...){
+  stargazer::stargazer(..., 
+          type = "text",
+          # style = "qje",
+          # title = "daily_kwh ~ post:encouraged|customer_id + no.bill|0|customer_id",
+          keep.stat = c("n", "ser"),
+          digits = 5)
+}
+
+gpt_area <- function(in_data, in_x, in_y, in_times, heading, heading_x,heading_y){
+  gpt(in_data) +
+  geom_point(aes(x = in_x, 
+               y = in_times*in_y), 
+           alpha = I(.8)) +
+  geom_line(aes(x = in_x, 
+               y = in_times*in_y,
+               group = 1)) +
+  geom_bar(aes(x = in_x, 
+               weight = in_y,
+               alpha = I(.3))) +
+  theme(axis.text.x = element_text(angle = 0, hjust = .6)) +
+  geom_text(data = in_data,
+            aes(x = in_x,
+                y = in_y,
+                label= in_y),
+            vjust = -0.2) +
+  labs(title  = heading,
+       x = heading_x,
+       y = heading_y)
+}
+ggthemr('light',type = 'outer')
+
+```
+
+
+
+
+#--------------------------------------------
+
+## 1. data_pp(16-19)
+
+
+```{r}
+
+library(coronavirus)
+# run_app(virus)
+# ggthemr('light',type = 'outer')
+```
+
+
+```{r}
+covid <- coronavirus %>%
+  filter(country == "China", type == "confirmed")
+covid_sx <- covid %>% filter(province == "Shanxi")
+
+```
+
+
+```{r}
+ggplot(covid) +
+ aes(x = date, fill = country, colour = cases, group = country, weight = cases) +
+ geom_bar(position = "dodge") +
+ scale_fill_brewer(palette = "RdGy") +
+ scale_color_distiller(palette = "RdGy") 
+
+```
+
+
+#--------------------------------------------
+## 2. covid plots
+
+```{r}
+covid <- covid %>% 
+  mutate(date = ymd(date)) %>% 
+  mutate_at(vars(date), funs(year, month, day))
+
+confirm_plt <- aggregate(cases~month, covid, sum)
+
+gpt(confirm_plt)+
+  aes(x = month, y = cases)+
+  geom_col()+
+  geom_text(data = confirm_plt,
+            aes(x = month,
+                y =  cases,
+                label= cases),
+            vjust = -0.2)
+
+
+gpt_china_covid_case <- gpt_area(confirm_plt, 
+                                 confirm_plt$month, 
+                                 confirm_plt$cases, 
+                                 1, 
+                                 "Exsisting cases in China Mainland", 
+                                 "month", 
+                                 "sum") + 
+  scale_x_continuous(n.breaks = 7) 
+
+ggsave(filename = "./covid_china_case.png", plot = gpt_china_covid_case, width = 12)
+# #--------------------------------------------
+
+# gpt_china_covid_case + 
+#   geom_point(data = pp_data, x = month, y)
+```
+
+#--------------------------------------------
+
+```{r}
+pp_yrm_s.complete_plt <- pp_data %>% group_by(month, as.factor(year)) %>% summarise(sum(complete)) %>% 
+  rbind()
+
+pt1 <- pp_yrm_s.complete_plt[pp_yrm_s.complete_plt$`as.factor(year)` == "20",]
+pt1[7,] <- pt1[6,]
+pt1[7,1] <- 7
+pt1[7,3] <- 301.1704-53.964
+plt1 <- cbind(confirm_plt, pt1)
+plt1 <- plt1[,-1]
+
+
+china_covid_el_gen <- gpt_area(plt1, 
+                               confirm_plt$month, 
+                               confirm_plt$cases, 
+                               1, 
+                               "Exsisting cases in China Mainland", 
+                               "month", 
+                               "sum") + 
+  geom_point(aes(x = month, y = `sum(complete)` * 100), color = "red") +
+  geom_line(aes(x = month, y = `sum(complete)` * 100), color = "purple") +
+  geom_text(data = plt1,
+            aes(x = month,
+                y = `sum(complete)` * 100 ,
+                label= `sum(complete)`),
+            vjust = -0.2) +
+  scale_x_continuous(n.breaks = 7) 
+#--------------------------------------------
+china_covid_el_gen
+ggsave(filename = "./covid_el-gen_china.png", plot = china_covid_el_gen, width = 12)
+
+```
+
+```{r}
+covid_sx <- covid_sx %>% group_by(month) %>% summarise(sum(cases)) %>% cbind(pt1)
+covid_sx <- covid_sx[,-3]
+
+shanxi_covid_el_gen <- gpt_area(covid_sx, 
+                                covid_sx$month, 
+                                covid_sx$`sum(cases)`, 
+                                1, 
+                                "Exsisting cases in Shanxi Province", 
+                                "month", 
+                                "sum") + 
+  geom_point(aes(x = month, y = `sum(complete)` ), color = "red") +
+  geom_line(aes(x = month, y = `sum(complete)` ), color = "purple") +
+  geom_text(data = covid_sx,
+            aes(x = month,
+                y = `sum(complete)` ,
+                label= `sum(complete)`),
+            vjust = -0.2) +
+  scale_x_continuous(n.breaks = 7) 
+shanxi_covid_el_gen
+#-------------------------------------------
+ggsave(filename = "./covid_el-gen_shanxi.png", plot = shanxi_covid_el_gen, width = 12)
+```
+
+
+
+
+
+#--------------------------------------------
+
+```{r}
+p1 <- ggplot(pp_yrm_s.complete_plt) +
+ aes(x = month, y = `sum(complete)`, colour = `as.factor(year)`) +
+ geom_line(size = .5L) +
+ scale_color_hue() +
+ theme_minimal() + 
+ scale_x_continuous(n.break = 12)
+p1 
+```
+
+
+```{r}
+confirm_plt <- aggregate(cases~month, covid, sum)
+plt2 <- merge(confirm_plt, pp_yrm_s.complete_plt, by = "month")
+
+ggplot(plt2) +
+ aes(x = month) +
+ geom_line(aes(y = plt2$`sum(complete)`*915), 
+     fill = plt2$`sum(complete)`, 
+     colour = plt2$`as.factor(year)`, 
+     group = plt2$`as.factor(year)`, size = 1L) +
+ scale_fill_gradient() +
+ scale_color_hue() +
+ theme_minimal() +
+  geom_bar(aes(x = month, weight = cases), alpha = I(.4))
+```
+
+
+
+#--------------------------------------------
+
+## 3. big5
+
+```{r}
+pp_data$big_five %>% table
+# 9594+2766 
+# 0     1 
+df_big5_year_comp <- pp_data %>% group_by(big_five, year, month) %>% summarise(mean(complete))
+
+# df_big5_year_comp <- df_big5_year_comp[-c(1,6), ]
+names(df_big5_year_comp)
+df_big5_year_comp$yearmon <- as.yearmon(paste(df_big5_year_comp$year,df_big5_year_comp$month), "%y%m")
+
+ 
+
+
+gpt(df_big5_year_comp %>% filter(year == 20))+geom_line(aes(x = yearmon, y = `mean(complete)`, color = big_five))
+```
+
+#--------------------------------------------
+
+### Prediction
+
+```{r}
+# library(trelliscopejs)
+library(caret)
+library(ranger)
+library(fastDummies)
+library(neuralnet)
+library(plm)
+library(gbm)
+library(gamlr)
+library(kernlab)
+library(glmnet)
+library(e1071)
+
+myControl <- trainControl(
+  method = "cv", 
+  number = 10,
+)
+```
+
+```{r}
+pp_data %>% names
+# pp_data_dummy <- fastDummies::dummy_cols(pp_data, select_columns = c("month", "year", "area3"))
+pp_data$yearmon <- as.yearmon(paste(pp_data$year, pp_data$month), "%y%m")
+comp.mean = (pp_data %>% group_by(yearmon) %>% summarise(mean(complete)) %>% ungroup())
+pp_data_test <- merge(comp.mean, pp_data, by = "yearmon")
+names(pp_data_test)[2] = "mean.com"
+#--------------------------------------------
+
+pp_data_dummy <- select(pp_data, c(-capacity, -generated_el, -time, -op_time, -area, -plant))
+pp_data_before <- pp_data_dummy %>% filter(year != 20)
+pp_data_after <- pp_data_dummy %>% filter(year == 20)
+```
+
+
+```{r}
+samplesize = 0.75 * nrow(pp_data_before)
+set.seed(123)
+index = sample(nrow(pp_data_before), size = samplesize)
+
+# creating training and test set
+pp_train = pp_data_before[index,]
+pp_test = pp_data_before[-index,]
+```
+
+## Linear Regression
+
+```{r message=FALSE, warning=FALSE}
+# From previous step
+# which(is.na(pp_train))
+# names(pp_train)
+
+tuneGrid <- data.frame(
+    alpha = seq(0, 1, length = 5),
+    lambda = seq(0.0001, 1, length = 20)
+)
+
+# Fit random forest: model
+lr_model <- train(
+  complete ~ . ,
+  data = pp_train, 
+  method = "glmnet",
+  tuneGrid = tuneGrid,
+  trControl = myControl
+)
+
+# Print model to console
+# tuneGrid
+# lr_model
+plot(lr_model)
+```
+
+```{r}
+lr_model$bestTune
+# lr_model$finalModel ## dont run
+# pp_test <- pp_test %>% filter(pp_test$plant_1 != c("chongfudianchang", "kunpengguangfu", "shangpoguangfu", "wuxiangyongxinguangfu"))
+# which(pp_test$plant_1 == "chongfudianchang")
+
+mod2$xlevels[["y"]] <- union(mod2$xlevels[["y"]], levels(test$y))
+
+pred_complete <- predict(lr_model, newdata = pp_test)
+```
+
+
+```{r}
+
+```
+
+
+
+
+
+
+```{r}
+
+```
+

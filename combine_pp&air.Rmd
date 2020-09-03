@@ -1,0 +1,588 @@
+---
+title: "Combine"
+author: "Siming Yan"
+date:   "`r format(Sys.time(), '%d %B, %Y')`"
+output:
+  html_document:
+    theme: spacelab
+    keep_md: true
+    toc: yes
+    toc_float: true
+    highlight: haddock
+    
+---
+
+<html>
+<style> 
+div.bgm { background-color:#e6fff0; border-radius: 7px; padding: 10px;} 
+.ans {
+  color: purple;
+  font-weight: bold;
+}
+#main { 
+    color: #2cb061; 
+}
+</style>
+
+<div class = "bgm">
+
+<ul id="main">
+
+
+```{r setup, echo=FALSE, cache=FALSE, include = F}
+library(knitr)
+library(rmdformats)
+
+## Global options
+options(max.print="75")
+knitr::opts_chunk$set(
+	fig.width = 7,
+	message = FALSE,
+	warning = FALSE,
+	cache = TRUE,
+	comment = NA,
+	dpi = 300,
+	prompt = FALSE,
+	tidy = TRUE
+)
+opts_knit$set(width=75)
+# knitr::opts_chunk$set()
+options(digits=5)
+options(scipen=5)
+knitr::opts_chunk$set(warning = F, message=F)
+
+```
+
+### set
+ 
+```{r setup2, include=FALSE}
+
+library(knitr)
+library(dplyr)
+library(tidyr)
+library(lubridate)
+library(scales)
+library(stargazer)
+library(tidyverse)
+# library(car)
+library(formatR)
+# library(plm)
+# library(lfe)
+library(data.table)
+# library(mlogit)
+# library(lmtest) #for coeftest() and bptest().
+# library(broom) #for glance() and tidy()
+# library(RCurl)# For the robust SE method 1
+# library(sandwich)
+library(texreg) 
+library(mice) #check NA
+# library(MatchIt)
+library(ggthemes)
+library(RColorBrewer)
+library(readxl)
+library(openxlsx)
+library(zoo)
+library(pinyin)
+
+library(kableExtra)
+
+```
+
+```{r functions, warning=F, message=F, include = F}
+kbt <- function(...){
+  knitr::kable(..., format.args = list(big.mark = ',', scientific = F)) %>%
+    kableExtra::kable_styling(c("striped", "hover", "condensed"),
+                               full_width = F,
+                               position = "center",
+                               row_label_position = "c") %>%
+   row_spec(0, bold = T, color = "white", background = "#004d1f")
+}
+
+gpt <- function(...){
+  ggplot2::ggplot(...) + 
+    theme_minimal() +
+    theme(plot.title = element_text(face = "bold", size = 14, hjust = 0.5),
+      plot.subtitle = element_text(face = "italic", size = 12, hjust = 0.5), 
+      axis.text.x = element_text(angle = 0, hjust = 0.5))
+}
+
+stg <- function(...){
+  stargazer::stargazer(..., 
+          type = "text",
+          # style = "qje",
+          # title = "daily_kwh ~ post:encouraged|customer_id + no.bill|0|customer_id",
+          keep.stat = c("n", "ser"),
+          digits = 5)
+}
+```
+
+
+#--------------------------------------------
+
+## 1. data_area
+```{r}
+#-------------------------------------------
+# read city air data,
+df <- read.csv("./data/pp_data.csv")
+
+areadata <- read.xlsx("./data/电厂名称.xlsx")
+# which(is.na(areadata))
+areadata <- areadata[-1,2:3]
+names(areadata) <- c("plant", "area")
+#--------------------------------------------
+areadata2 <- read.xlsx("./data/area_lack.xlsx", colNames = T, startRow = 2) %>% na.omit()
+areadata2 <- areadata2[ ,-1]
+names(areadata2) <- c("plant", "area")
+areadata <- rbind(areadata, areadata2)
+remove(areadata2)
+
+
+areadata$plant <- gsub("^\\d{1,3}[kK][vV]", "",
+                         areadata$plant)
+
+# df <- df[order(areadata$plant), ]
+areadata$plant <- gsub("光伏电站", "光伏", areadata$plant)
+ 
+areadata$plant <- gsub("忻州|晋城|运城|大同|太原|阳泉|晋中|临汾|朔州|长治|吕梁","", areadata$plant)
+
+
+areadata$plant <- gsub("右玉圣水塘", "圣水塘风电场", areadata$plant)
+```
+
+
+```{r}
+pp_data <- merge(df, areadata, by = "plant", all = T, incomparables = T, no.dups = T)
+
+pp_data <- pp_data %>% distinct(pp_data$plant, pp_data$year, pp_data$month, .keep_all = T)
+
+# for (i in pp_data$area){
+#   if (is.na(i) == TRUE){
+#     i = "undefined"
+#   }
+# }
+# 
+# pp_data %>% filter(area == "undefined")
+pp_data <- pp_data[!is.na(pp_data$complete), ]
+
+#--------------------------------------------
+# only keep city names, not county.
+pp_data$area2 <- substr(pp_data$area, 0, 3)
+
+remove(ppdata)
+pp_data %>% names
+pp_data <- select(pp_data, -c("pp_data$plant","pp_data$year","pp_data$month", "X"))
+
+```
+
+<!-- ##### modified 7.21 -->
+```{r}
+##--------------------------------------------
+# check city names:
+pp_data$area2 <- gsub("忻州原", "xinzhou", pp_data$area2)
+# pp_data %>% group_by(area2) %>% summarise(n())
+pp_data <- pp_data[ , !names(pp_data) %in% "X"]
+```
+
+
+```{r}
+# change city names to english names
+
+pp_data$area3 <- pp_data$area2 %>% py(sep = "", dic = pydic(method = 'toneless', dic = "pinyin2"))
+# chinese charachter convert to english.
+
+pp_data$area3 <- gsub("shi", "", pp_data$area3)
+pp_data$area3 <- gsub("lvliang", "luliang", pp_data$area3)
+#--------------------------------------------
+
+# pp_data %>% group_by(area3) %>% summarise(n())
+ 
+```
+
+
+
+<!-- #-------------------------------------------- -->
+#--------------------------------------------
+## 2. write data.
+```{r }
+#去除县市名称
+
+# pp_data <- pp_data[, !names(pp_data) %in% c("area", "area2")]
+pp_data <- pp_data[!is.na(pp_data$complete),]
+# md.pattern(pp_data)
+# pp_data <- read.csv("./data/pp_data_real.csv")
+```
+
+## 3, pinyin and wind_water_light_gas
+
+```{r }
+# library(pinyin)
+# library(tidyverse)
+# pp_data %>% summary
+pp_data$plant_1 <- pp_data$plant %>% py(sep = "", dic = pydic(method = 'toneless', dic = "pinyin2"))
+#--------------------------------------------
+
+wind_index <- grep("风电", pp_data$plant)
+pp_data$wind <- {}
+pp_data$wind <- "0"
+
+# pp_data$wind %>% str
+for (i in wind_index){
+  pp_data$wind[i] <- "1"
+}
+# write.csv(pp_data, file = "./data/pp_data_real.csv")
+#--------------------------------------------
+
+
+water_index <- grep("水电", pp_data$plant)
+pp_data$water <- {}
+pp_data$water <- "0"
+
+# pp_data$wind %>% str
+for (i in water_index){
+  pp_data$water[i] <- "1"
+}
+
+#--------------------------------------------
+light_index <- grep("光伏", pp_data$plant)
+pp_data$light <- {}
+pp_data$light <- "0"
+
+# pp_data$wind %>% str
+for (i in light_index){
+  pp_data$light[i] <- "1"
+}
+
+
+#--------------------------------------------
+fire_index <- c(1:12360)[-which(c(1:12360) %in% c(light_index, wind_index, water_index))]
+pp_data$fire <- {}
+pp_data$fire <- "0"
+# 
+# (fire_index %>% length)+(light_index %>% length)+(water_index %>% length)+(wind_index %>% length())
+
+for (i in fire_index){
+  pp_data$fire[i] <- "1"
+}
+#--------------------------------------------
+# pp_data <- pp_data[, -which(names(pp_data) %in% c("area_2"))]
+# names(pp_data)[(length(names(pp_data))-3):length(names(pp_data))] 
+names(pp_data)[(length(names(pp_data))-3):length(names(pp_data))]  = c("wind", "Hydro", "photovoltaic", "Fossil-fuel")
+# Hydroelectricity
+```
+
+## 4.write data (8.21)
+
+```{r writewrite!}
+pp_data <- pp_data %>% select(-c(designed_capacity, area2))
+# write.csv(pp_data, file = "./data/pp_data_real.csv")
+#--------------------------------------------
+
+```
+
+## 5. modification
+
+```{r}
+
+pp_freq <- pp_data$parent_company %>% table %>% as.data.frame()
+
+df_freq <- pp_freq[order(pp_freq$Freq, decreasing = T),]
+# order(Freq)
+
+#--------------------------------------------
+
+pp_data <- mutate(pp_data, 
+                  big_five = ifelse(grepl("华能集团公司|国家电投集团公司|国电集团公司|大唐集团公司|中国华电集团|神华集团|国家能源集团|国家电投集团|国家电力投资集团有限公司|国家电投|中国华电集团有限公司|华电集团|大唐国际发电股份有限公司", 
+                                          pp_data$parent_company) == T, "1", "0"))
+#--------------------------------------------
+# 
+# df_tes <- pp_data_test[which(grepl("华能集团公司|国家电投集团公司|国电集团公司|大唐集团公司|中国华电集团|	
+# 神华集团|国家能源集团|国家电投集团|国家电力投资集团有限公司|国家电投|中国华电集团有限公司|华电集团|大唐国际发电股份有限公司", pp_data$parent_company) == T),]
+
+# 中国华能集团公司、中国大唐集团公司、中国华电集团公司、国家能源投资集团有限公司、国家电力投资集团公司
+```
+
+###
+
+```{r}
+pp_data[order(pp_data$year), ] %>% head(15)
+which(is.na(pp_data$op_time)) %>% length
+which(pp_data$parent_company == 'else') %>% length
+
+
+# newdata <- mtcars[order(mpg),]
+# sum((pp_data %>% filter(year == 20) %>% filter(month == 4))$complete)
+# view(pp_data %>% filter(year == 20) %>% filter(month == 4))
+# # duplicate alert
+# which(duplicated((pp_data %>% filter(year == 20) %>% filter(month == 6))$plant) == T)
+```
+
+#--------------------------------------------
+# test
+```{r}
+# duplicated()
+pp_data$dup <- paste0(pp_data$year, pp_data$month, pp_data$plant, pp_data$complete)
+pp_data <- pp_data[!duplicated(pp_data$dup), ]
+pp_data <- select(pp_data, -"dup")
+write.csv(pp_data, file = "./data/pp_data_real.csv")
+```
+
+
+#--------------------------------------------
+
+<!-- #-------------------------------------------- -->
+ 
+ 
+
+
+#--------------------------------------------
+#--------------------------------------------
+#--------------------------------------------
+
+
+## 65. combine pollution_data
+```{r}
+# pp_data %>% str
+# air_data_final %>% str
+# pp_data %>% group_by(year) %>% summarise(n())
+# air_data_final %>% group_by(year) %>% summarise(n())
+
+# pp_data$area3
+# air_data_final$area3
+# air_data_final <- read.csv("./data/air_data_final.csv")
+# dada <- merge(pp_data, air_data_final, by = c("year", "month", "area3"), all = T)
+# dada <- dada[!dada$plant %>% is.na() == T,]
+```
+
+#--------------------------------------------
+
+
+
+
+
+## 66. writedown pollution*plant datas
+
+```{r write#存1储}
+# write.csv(dada, file = "./data/plant_air_data.csv")
+```
+
+
+
+
+
+#--------------------------------------------
+## 98. plots1
+
+```{r}
+xingneng <- dada %>% filter(grepl("兴能..", dada$plant) == T)
+str(xingneng)
+
+# xingneng$yearmonth <- as.Date(with(xingneng, paste(year, month, sep = "-")), "y-m")
+# xingneng %>% view
+
+xingneng$yearmont <- as.yearmon(paste(xingneng$year, xingneng$month), "%y%m")
+
+```
+
+```{r}
+# plt_xingneng <- xingneng %>% group_by(plant)
+xingneng$yearmont <- xingneng$yearmont %>% as.Date()
+
+vline = sort(xingneng$yearmont)[c(3, 25, 50, 73)]
+gpt(xingneng)+
+  aes(x = yearmont, y = complete, color = plant) + 
+  geom_line() + 
+  geom_point() +
+  scale_x_date(date_breaks="month", labels = date_format("%y-%m")) +
+  theme(axis.text.x = element_text(angle = 35, hjust = .5)) +
+  geom_text(data = xingneng, 
+            aes(x = yearmont, y = complete, label = complete),
+            position = position_dodge(width = 3.7),
+            vjust = -1,
+            angle = -25,
+            size = 4.5) +
+  geom_vline(xintercept = vline, col = 2, lty = 2)
+```
+
+
+## 99. plots
+
+```{r}
+dada_plt_cty_plnt <- dada %>% group_by(area3) %>% summarise(n())
+gpt(dada_plt_cty_plnt) +
+  geom_bar(aes(x = area3, weight = `n()`))  +
+  theme(axis.text.x = element_text(angle = 25, hjust = .6)) + 
+  labs(title  = "Power-plant count by city",
+       x = "city",
+       y = "count") +
+  geom_text(data = dada_plt_cty_plnt,
+            aes(x = area3,
+                y = `n()`,
+                label=`n()`),
+            vjust = -0.2)
+```
+
+
+```{r gpt_area_func}
+gpt_area <- function(in_data, in_y, in_times){
+  gpt(in_data) +
+  geom_point(aes(x = area3, 
+               y = in_times*in_y), 
+           alpha = I(.8)) +
+  geom_line(aes(x = area3, 
+               y = in_times*in_y,
+               group = 1)) +
+  geom_bar(aes(x = area3, 
+               weight = `n()`),
+               alpha = I(.3)) +
+  theme(axis.text.x = element_text(angle = 25, hjust = .6)) +
+    geom_text(data = dada_plt_cty_plnt,
+            aes(x = area3,
+                y = `n()`,
+                label=`n()`),
+            vjust = -0.2)
+}
+
+
+```
+
+
+```{r pm25, warning=FALSE, message=FALSE}
+# dada$mean.pm25.
+str(dada)
+#  ________________________
+ 
+# '------------------------'
+
+
+# dada_plt_cty_air <- dada %>% group_by(area3) %>%
+#   summarise(mean(mean.pm25.)) %>% 
+#   merge(dada_plt_cty_plnt, by = "area3") %>% ungroup
+dada_plt_cty_air <- aggregate(mean.pm25.~area3, data= dada, mean) %>% 
+  merge(dada_plt_cty_plnt, by = "area3")
+
+gpt_area(dada_plt_cty_air, dada_plt_cty_air$`mean.pm25.`, 7) +
+    labs(title  = "Air_pm25 of city(sum all 3 years), plant count",
+       x = "city",
+       y = "count")
+
+  
+```
+
+```{r pm10, warning=FALSE, message=F}
+# dada$mean.pm10.
+dada_plt_cty_air2 <- aggregate(mean.pm10.~area3, data= dada, mean) %>% 
+  merge(dada_plt_cty_plnt, by = "area3") %>% ungroup
+
+gpt_area(dada_plt_cty_air2, dada_plt_cty_air2$`mean.pm10.`, 7) +
+  geom_text(data = dada_plt_cty_plnt,
+            aes(x = area3,
+                y = `n()`,
+                label=`n()`),
+            vjust = -0.2) +
+    labs(title  = "Air_pm10 of city(sum all 3 years), plant count",
+       x = "city",
+       y = "count")
+  
+```
+
+```{r So2, warning=FALSE, message=F}
+# dada$mean.pm10.
+dada_plt_cty_air3 <- dada %>% group_by(area3) %>%
+  summarise(mean(mean.so2.)) %>% 
+  merge(dada_plt_cty_plnt, by = "area3") %>% ungroup
+
+gpt_area(dada_plt_cty_air3, dada_plt_cty_air3$`mean(mean.so2.)`, 22) +
+  geom_text(data = dada_plt_cty_plnt,
+            aes(x = area3,
+                y = `n()`,
+                label=`n()`),
+            vjust = -0.2) +
+    labs(title  = "Air_so2 of city(sum all 3 years), plant count",
+       x = "city",
+       y = "count")
+  
+```
+
+
+```{r rmv_na_or16 complete}
+# for (i in dada$complete){
+#   if (i %>% is.na() == TRUE){
+#   print()
+#  }
+#  }
+dada <- dada[!is.na(dada$complete),]
+
+comp_m_city <- dada %>% 
+  group_by(area3, year) %>% 
+  summarise(sum(complete))
+
+comp_m_city <- comp_m_city[!comp_m_city$year == 16,]
+
+# gpt_area(comp_m_city, comp_m_city$`sum(complete)`)
+```
+
+
+```{r}
+comp_m_city$year <- as.factor(comp_m_city$year)
+
+pow_com_city_year_plt <- gpt(comp_m_city) +
+  geom_point(aes(x = area3, 
+               y = `sum(complete)`,
+               color = year), 
+           alpha = I(.8)) +
+  geom_line(aes(x = area3, 
+               y = `sum(complete)`,
+               color = year,
+               group = year)) +
+  theme(axis.text.x = element_text(angle = 25, hjust = .6)) +
+    labs(title  = "Plant complete power generated of city(3 years)",
+       x = "city",
+       y = "count") 
+  # scale_color_discrete(palette = "Set1")
+pow_com_city_year_plt
+```
+
+
+```{r pm25a}
+year_pm25_city <- dada %>% 
+  group_by(area3, year) %>% 
+  summarise(mean(mean.pm25.))
+
+year_pm25_city <- year_pm25_city[!year_pm25_city$year == 16,]
+
+# gpt_area(comp_m_city, comp_m_city$`sum(complete)`)
+```
+
+
+
+```{r}
+# pm25 plot with city complete power generated
+pow_com_city_year_plt + 
+  geom_line(data = year_pm25_city,
+           aes(x = area3, 
+               y = year_pm25_city$`mean(mean.pm25.)`, group = year,
+               color = as.factor(year)),
+           alpha = I(.9), linetype = 3) +
+    labs(subtitle = "air_quality_pm25",
+       x = "city",
+       y = "count") 
+```
+
+From plot above we can easily observe that due to policy change and technology advance, air quality of pm 2.5 is not correlated to power generated at city level, but i have not exclude wind power, solar power plant by now.
+
+
+
+```{r}
+dada$yearmon <- paste0(dada$year,dada$month) %>% as.factor()
+library(lfe)
+fit1 <- felm(mean.pm25. ~ complete|yearmon + area3|0|area3, data = dada)
+fit1 %>% summary
+```
+
+similar results obtained from regression output, fixed-effect include "year month + city",
+clustered at "city" level.
+
+
+
+<span style="font-size:13px;color:#8B30BB;">end of the piece</span>
+

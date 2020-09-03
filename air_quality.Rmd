@@ -1,0 +1,202 @@
+---
+title: "Air quality"
+author: "Siming Yan"
+date:   "`r format(Sys.time(), '%d %B, %Y')`"
+output:
+  html_document:
+    theme: spacelab
+    keep_md: true
+    toc: yes
+    toc_float: true
+    highlight: haddock
+    
+---
+
+<html>
+<style> 
+div.bgm { background-color:#e6fff0; border-radius: 7px; padding: 10px;} 
+.ans {
+  color: purple;
+  font-weight: bold;
+}
+#main { 
+    color: #2cb061; 
+}
+</style>
+
+<div class = "bgm">
+
+<ul id="main">
+
+
+```{r setup, echo=FALSE, cache=FALSE, include = F}
+library(knitr)
+library(rmdformats)
+
+## Global options
+options(max.print="75")
+opts_chunk$set(cache=TRUE,
+               prompt=FALSE,
+               tidy=TRUE,
+               comment=NA,
+               message=FALSE,
+               warning=FALSE,
+               dpi=300,fig.width=7)
+opts_knit$set(width=75)
+# knitr::opts_chunk$set()
+options(digits=5)
+options(scipen=5)
+knitr::opts_chunk$set(warning = F, message=F)
+
+```
+
+### 0. prepare
+
+```{r packages, include = F, warning = F, message = F, }
+library(kableExtra)
+library(knitr)
+library(dplyr)
+library(tidyr)
+library(lubridate)
+library(scales)
+library(stargazer)
+library(tidyverse)
+# library(car)
+library(formatR)
+# library(plm)
+# library(lfe)
+library(data.table)
+# library(mlogit)
+# library(lmtest) #for coeftest() and bptest().
+# library(broom) #for glance() and tidy()
+# library(RCurl)# For the robust SE method 1
+# library(sandwich)
+library(texreg) 
+library(mice) #check NA
+# library(MatchIt)
+library(ggthemes)
+library(RColorBrewer)
+library(readxl)
+library(openxlsx)
+library(zoo)
+library(stringr)
+```
+
+```{r functions, warning=F, message=F, include = F}
+kbt <- function(...){
+  knitr::kable(..., format.args = list(big.mark = ',', scientific = F)) %>%
+    kableExtra::kable_styling(c("striped", "hover", "condensed"),
+                               full_width = F,
+                               position = "center",
+                               row_label_position = "c") %>%
+   row_spec(0, bold = T, color = "white", background = "#004d1f")
+}
+
+gpt <- function(...){
+  ggplot2::ggplot(...) + 
+    theme_minimal() +
+    theme(plot.title = element_text(face = "bold", size = 14, hjust = 0.5),
+      plot.subtitle = element_text(face = "italic", size = 12, hjust = 0.5), 
+      axis.text.x = element_text(angle = 0, hjust = 0.5))
+}
+
+stg <- function(...){
+  stargazer::stargazer(..., 
+          type = "text",
+          # style = "qje",
+          # title = "daily_kwh ~ post:encouraged|customer_id + no.bill|0|customer_id",
+          keep.stat = c("n", "ser"),
+          digits = 5)
+}
+```
+
+
+
+
+```{r}
+aq_list <- list.files(path = "../airquality/") 
+xlist <- paste("../airquality/", list.files("../airquality"), sep = "")
+```
+
+```{r}
+All <- lapply(xlist, function(filename){
+    print(paste("Merging", filename, sep = " "))
+    read.delim(filename, header = T, sep = ",")
+})
+
+```
+
+
+
+```{r}
+# add names to air quality data.
+tsts <- c(1:11)
+
+for (i in 1:11){
+  tsts[i] <- gsub("[[:punct:]]", "", aq_list[i])
+  tsts[i] <- gsub("airqualitytxt", "", tsts[i])
+  All[[i]][,"area2"] <- tsts[i]
+}
+
+remove(tsts)
+
+```
+
+
+```{r time_change}
+
+for (j in 1:11){
+  All[[j]]$date <- All[[j]]$date %>% as.Date
+  All[[j]][c("year", "month", "day")] <- str_split_fixed(All[[j]]$date, "-", 3) #  change to year month date
+  All[[j]] <- All[[j]][!is.na(All[[j]]$pm10), ] 
+  All[[j]] <- All[[j]][!is.na(All[[j]]$pm25), ] 
+  All[[j]] <- filter(All[[j]], year >= 2016)
+}
+
+All2 <- All
+```
+
+
+```{r}
+# calculate means
+for (i in 1:11){
+  All2[[i]] <- All[[i]] %>% 
+    group_by(year, month, area2) %>% 
+    summarise(mean(pm25), mean(pm10), 
+              mean(o3), mean(no2),
+              mean(so2), mean(co))
+}
+
+for (i in 1:11){
+  names(All2[[i]])[3] = "area3"
+}
+
+```
+
+```{r cob_prepare}
+
+# combine preparation.
+
+air_data_final <- do.call(rbind.data.frame, All2) %>% ungroup() %>% data.frame()
+air_data_final$year<- air_data_final$year %>% as.numeric()
+air_data_final$month<- air_data_final$month %>% as.numeric()
+
+for (i in 1:11){
+  tsts[i] <- gsub("[[:punct:]]", "", aq_list[i])
+  tsts[i] <- gsub("airqualitytxt", "", tsts[i])
+  All[[i]][,"area2"] <- tsts[i]
+}
+
+air_data_final$year <- gsub("20", "", air_data_final$year)
+```
+
+```{r}
+write.csv(air_data_final, "./data/air_data_final.csv")
+```
+
+
+<!-- #-------------------------------------------- -->
+<!-- #-------------------------------------------- -->
+
+
+

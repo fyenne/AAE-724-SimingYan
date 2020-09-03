@@ -1,0 +1,46 @@
+---
+title: "pp_pj2"
+author: "Siming Yan"
+date: "8/6/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+```
+ 
+```{r}
+pp_data2 <- read.csv("./data/powerdata_2.csv")
+test_ppdata <- pp_data2[-c(1:140), ]
+el_gen2 <- {}
+el_gen2 <- as.numeric(test_ppdata$发电量.火力.山西) + 
+  as.numeric(test_ppdata$发电量.风力.山西) + 
+  as.numeric(test_ppdata$发电量.水力.山西) + 
+  as.numeric(test_ppdata$发电量.太阳能.山西)
+el_gen2 <- el_gen2[8:12] %>% as.data.frame()
+el_gen2$month <- c(3:7)
+el_gen2[,1] <- el_gen2[,1]*10
+
+pttt <- pt1[-c(1:2), ]
+pttt <- cbind(pttt, el_gen2)
+pttt$cha <- pttt$`sum(complete)` - pttt$.
+pttt$cha[1:4] %>% mean()
+```
+ 
+```{r}
+read_xls("../18_19/20.4.xls")
+```
+ 
+
+```{r}
+pp_data2 %>% names
+fin_in_out <- pp_data2[,c(1, 21:42)]
+fin_in_out %>% names
+# in million CNY
+# fiscal avanue, fiscal spending
+fin_in_out <- fin_in_out[-(1:25), ]
+names(fin_in_out)[1] <- "yearmonth"
+fin_in_out$yearmonth1 <- as.Date(fin_in_out$yearmonth, "%m%Y")
+```
+

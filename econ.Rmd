@@ -1,0 +1,262 @@
+---
+title: "Econ"
+author: "Siming Yan"
+date:   "`r format(Sys.time(), '%d %B, %Y')`"
+output:
+  html_document:
+    theme: spacelab
+    keep_md: true
+    toc: yes
+    toc_float: true
+    highlight: haddock
+    
+---
+
+<html>
+<style> 
+div.bgm { background-color:#e6fff0; border-radius: 7px; padding: 10px;} 
+.ans {
+  color: purple;
+  font-weight: bold;
+}
+#main { 
+    color: #2cb061; 
+}
+</style>
+
+<div class = "bgm">
+
+<ul id="main">
+
+
+```{r setup, echo=FALSE, cache=FALSE, include = F}
+library(knitr)
+library(rmdformats)
+
+## Global options
+options(max.print="75")
+knitr::opts_chunk$set(
+	fig.width = 7,
+	message = FALSE,
+	warning = FALSE,
+	cache = TRUE,
+	comment = NA,
+	dpi = 300,
+	prompt = FALSE,
+	tidy = TRUE
+)
+opts_knit$set(width=75)
+# knitr::opts_chunk$set()
+options(digits=5)
+options(scipen=5)
+knitr::opts_chunk$set(warning = F, message=F)
+
+```
+
+### set
+ 
+```{r setup2, include=FALSE}
+
+library(knitr)
+library(dplyr)
+library(tidyr)
+library(lubridate)
+library(scales)
+library(stargazer)
+library(tidyverse)
+# library(car)
+library(formatR)
+# library(plm)
+# library(lfe)
+library(data.table)
+# library(mlogit)
+# library(lmtest) #for coeftest() and bptest().
+# library(broom) #for glance() and tidy()
+# library(RCurl)# For the robust SE method 1
+# library(sandwich)
+library(texreg) 
+library(mice) #check NA
+# library(MatchIt)
+library(ggthemes)
+library(RColorBrewer)
+library(readxl)
+library(openxlsx)
+library(zoo)
+library(pinyin)
+
+library(kableExtra)
+#Loading the rvest package
+library(rvest)
+ 
+
+# String manipulation
+library(stringr)   
+
+# Verbose regular expressions
+library(rebus)     
+
+# Eases DateTime manipulation
+library(lubridate)
+```
+
+```{r functions, warning=F, message=F, include = F}
+kbt <- function(...){
+  knitr::kable(..., format.args = list(big.mark = ',', scientific = F)) %>%
+    kableExtra::kable_styling(c("striped", "hover", "condensed"),
+                               full_width = F,
+                               position = "center",
+                               row_label_position = "c") %>%
+   row_spec(0, bold = T, color = "white", background = "#004d1f")
+}
+
+gpt <- function(...){
+  ggplot2::ggplot(...) + 
+    theme_minimal() +
+    theme(plot.title = element_text(face = "bold", size = 14, hjust = 0.5),
+      plot.subtitle = element_text(face = "italic", size = 12, hjust = 0.5), 
+      axis.text.x = element_text(angle = 0, hjust = 0.5))
+}
+
+stg <- function(...){
+  stargazer::stargazer(..., 
+          type = "text",
+          # style = "qje",
+          # title = "daily_kwh ~ post:encouraged|customer_id + no.bill|0|customer_id",
+          keep.stat = c("n", "ser"),
+          digits = 5)
+}
+```
+
+
+
+
+#--------------------------------------------
+
+```{r}
+ppdata <- read.csv("./data/pp_data_real.csv")
+ppdata <- ppdata[!is.na(ppdata$area2), ]
+ppdata$area2 %>% unique()
+# 11 
+```
+#--------------------------------------------
+## wrtie to html content
+
+```{r}
+# scrapping all website url. get menues
+#--------------------------------------------
+urls <- data.frame(1:81)
+for (i in 1:80){
+  urls[i,] <- paste('http://tjj.shanxi.gov.cn/sjjd/sxxx/index_93_',
+                    i, 
+                    sep = "") %>% paste(".html", sep = "")
+}
+urls[81, ] <- 'http://tjj.shanxi.gov.cn/sjjd/sxxx/index_93.html'
+
+#--------------------------------------------
+
+web_names0 <- data.frame(1:1620, 1:1620, 1:1620)
+
+for (i in 1:81){
+  web_names0[(1+(20*(i-1))):(20*i), ] <- read_html(urls[i, ]) %>% 
+                      html_nodes('.tit a') %>% 
+                      html_attrs() %>% 
+                      data.frame() %>% 
+                      transpose()
+  Sys.sleep(3)
+  # web_names1 <- mapply(c, web_names0, web_names)
+}
+
+# write.csv(web_names0, "./data/web_names.csv")
+```
+
+
+```{r}
+# "key word : 经济运行"
+
+web_jjyx <- web_names0 %>% filter(grepl("经济运行", web_names0$X1.1620.2) == T)
+web_jjyx$X1.1620.2 <- gsub("月全市", "", web_jjyx$X1.1620.2)
+web_jjyx$city <- str_extract_all(web_jjyx$X1.1620.2, "..市")
+web_jjyx$city %>% unique
+#--------------------------------------------
+# change names from character 0 to real names
+web_jjyx[web_jjyx$city == "character(0)",]
+
+web_jjyx$city[15]  <- "晋中市"
+web_jjyx$city[28]  <- "晋中市"
+web_jjyx$city[145] <- "大同市"
+web_jjyx$city[147] <- "太原市"
+web_jjyx$city[173] <- "朔州市"
+web_jjyx$city[c(196, 209, 217, 224)] <- "吕梁市"
+web_jjyx$city[246] <- "朔州市"
+web_jjyx$city[259] <- "临汾市"
+
+#--------------------------------------------
+#--------------------------------------------
+```
+
+
+```{r}
+#--------------------------------------------
+# test content
+
+
+test <- read_html('http://tjj.shanxi.gov.cn/sjjd/sxxx/index_93_2.html')
+list1 <-  test %>% html_nodes('.tit a') %>% html_attrs()
+df1 <- list1 %>% data.frame %>% transpose()
+ 
+
+yr <- c(2017, 2018, 2019, 2020)
+
+```
+
+```{r 对单个页面的爬虫}
+
+text1 <- html_nodes(test, '.article-box')
+# grep("..市全社会用电量\\d{1,}[[:punct:]]\\d{1,}", html_text(text1), value = T)
+
+# strsplit(string, pattern)
+stringr::str_extract_all(text1, "..市全社会用电量\\d{1,}[[:punct:]]\\d{1,}", simplify = TRUE)
+```
+ 
+
+
+#--------------------------------------------
+##### AFRE
+
+
+```{r}
+sherong <- readxl::read_xlsx("./data/sherong.xlsx",col_names = F)
+AFRE <- sherong[6:16, ]
+AFRE <- AFRE[-c(1,3,5), ]
+names(AFRE) <- AFRE[2,]
+names(AFRE)[2] <- "AFRE(hundred_million)"
+names(AFRE)[1] <- "yearmonth"
+
+AFRE$month <- c(0,0, 1:6)
+
+plt_afre <- cbind(pt1[-7,], AFRE[3:8, ])
+# AFRE[3:8, ]
+# pt1[-7,]
+AFRE <- AFRE[-2, ]
+head(AFRE)
+```
+
+```{r}
+plt_afre$`AFRE(hundred_million)` <- plt_afre$`AFRE(hundred_million)` %>% as.numeric()
+names(plt_afre )[1] =  "month"
+
+# plt_afre$month...1
+afre_plt1 <- gpt_area(plt_afre , plt_afre$month, plt_afre$`AFRE(hundred_million)`, 1,"AFRE in hundred million 2020", "month", "sum")+
+    scale_x_continuous(n.breaks = 6) +
+  geom_point(aes(x = month , y = `sum(complete)` * 100), color = "red") +
+  geom_line(aes(x = month , y = `sum(complete)` * 100), color = "purple") +
+  geom_text(data = plt_afre,
+            aes(x = month,
+                y = `sum(complete)` * 100 ,
+                label= `sum(complete)`),
+            vjust = -0.2) 
+  # scale_x_continuous(n.breaks = 7) 
+ggsave(filename = "./afre_el-gen_20.png", plot = afre_plt1, width = 12)
+# in_data, in_x, in_y, in_times, heading, heading_x,heading_y
+```
+

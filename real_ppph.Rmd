@@ -1,0 +1,416 @@
+---
+title: "PowerPlant-project"
+author: "Siming Yan"
+date:   "`r format(Sys.time(), '%d %B, %Y')`"
+output:
+  html_document:
+    theme: spacelab
+    keep_md: true
+    toc: yes
+    toc_float: true
+    highlight: haddock
+    
+---
+
+<html>
+<style> 
+div.bgm { background-color:#e6fff0; border-radius: 7px; padding: 10px;} 
+.ans {
+  color: purple;
+  font-weight: bold;
+}
+#main { 
+    color: #2cb061; 
+}
+</style>
+
+<div class = "bgm">
+
+<ul id="main">
+
+
+```{r setup, echo=FALSE, cache=FALSE, include = F}
+library(knitr)
+library(rmdformats)
+
+## Global options
+options(max.print="75")
+opts_chunk$set(cache=TRUE,
+               prompt=FALSE,
+               tidy=TRUE,
+               comment=NA,
+               message=FALSE,
+               warning=FALSE,
+               dpi=300,fig.width=7)
+opts_knit$set(width=75)
+# knitr::opts_chunk$set()
+options(digits=5)
+options(scipen=5)
+knitr::opts_chunk$set(warning = F, message=F)
+
+```
+
+### 0. prepare
+
+```{r packages, include = F, warning = F, message = F, }
+library(kableExtra)
+library(knitr)
+library(dplyr)
+library(tidyr)
+library(lubridate)
+library(scales)
+library(stargazer)
+library(tidyverse)
+# library(car)
+library(formatR)
+# library(plm)
+# library(lfe)
+library(data.table)
+# library(mlogit)
+# library(lmtest) #for coeftest() and bptest().
+# library(broom) #for glance() and tidy()
+# library(RCurl)# For the robust SE method 1
+# library(sandwich)
+library(texreg) 
+library(mice) #check NA
+# library(MatchIt)
+library(ggthemes)
+library(RColorBrewer)
+library(readxl)
+library(openxlsx)
+library(zoo)
+```
+
+```{r functions, warning=F, message=F, include = F}
+kbt <- function(...){
+  knitr::kable(..., format.args = list(big.mark = ',', scientific = F)) %>%
+    kableExtra::kable_styling(c("striped", "hover", "condensed"),
+                               full_width = F,
+                               position = "center",
+                               row_label_position = "c") %>%
+   row_spec(0, bold = T, color = "white", background = "#004d1f")
+}
+
+gpt <- function(...){
+  ggplot2::ggplot(...) + 
+    theme_minimal() +
+    theme(plot.title = element_text(face = "bold", size = 14, hjust = 0.5),
+      plot.subtitle = element_text(face = "italic", size = 12, hjust = 0.5), 
+      axis.text.x = element_text(angle = 0, hjust = 0.5))
+}
+
+stg <- function(...){
+  stargazer::stargazer(..., 
+          type = "text",
+          # style = "qje",
+          # title = "daily_kwh ~ post:encouraged|customer_id + no.bill|0|customer_id",
+          keep.stat = c("n", "ser"),
+          digits = 5)
+}
+```
+
+---
+
+#--------------------------------------------
+## 1. data 1617
+
+```{r 1617data_read}
+pp_list <- list.files(path = "../16_17/") 
+pp_list <- pp_list[1:12]
+
+xlist <- paste("../16_17/", list.files("../16_17"), sep = "")
+xlist <- xlist[1:12]
+
+#--------------------------------------------
+```
+
+```{r data16#1617年的数据, message = F, error = F}
+All <- lapply(xlist, function(filename){
+    # print(paste("Merging", filename, sep = " "))
+    read_xls(filename, skip = 12, col_names = F)
+})
+df <- do.call(rbind.data.frame, All)
+
+colnames(df) <- c("num", "plant", "capacity", "designed_capacity", "complete", "generated_el", "time", "month", "year", "parent_company") # rename data.
+ 
+df <- df[!grepl("^\\d{1,2}[[:punct:]]", df$plant), ] 
+ # delete all number start rows. (those are integrated company data)
+df <- df[!grepl("^\\w{1}[[:punct:]]", df$plant), ] 
+ # delete which has letters as serial number.
+
+df <- df[!grepl("^[一, 二, 三, 四, 五, 六, 七, 八, 九, 十]{1,3}[.、]", df$plant), ]
+
+df <- df[!is.na(df$plant),]
+
+df_2017 <- df[,-1]
+
+
+df_2017 <- df_2017[!grepl("回龙塔", df$plant), ] # wrong data
+df_2017 <- mutate(df_2017, year = 
+                    gsub("^\\d{2}", "", df_2017$year)) 
+remove(df)
+
+#--------------------------------------------
+
+# sum((df_2017 %>% filter(year == 16))$complete)
+# 186.83
+```
+ 
+ 
+ 
+ 
+```{r data1_pa, message = F, error = F, eval = F, include = F}
+
+#adding parent company 1
+#-------------------------------------------- 7.15 ,parent name change.
+
+df_2017$parent_company <- gsub("^[一, 二, 三, 四, 五, 六, 七, 八, 九, 十]{1,3}[.、]", "",  #1-3digit number, either . or \ !match
+                               df_2017$parent_company)
+
+df_2017$parent_company <- gsub("^\\w{1,3}[.、]", "", 
+                               df_2017$parent_company)
+
+
+#--------------------------------------------
+
+# which(is.na(df_2017$parent_company))
+df_2017$parent_company[2670] = "else"
+ 
+
+df_2017 %>% group_by(parent_company) %>% summarise(n())
+
+# which(df_2017$parent_company == "山西煤电一体化")
+# df_2017[1541,]
+#--------------------------------------------#delete 110kv etc name prefix
+# grep("^\\d{1,3}[kV, kv, KV, Kv]", df_2017$plant)
+# df_2017$plant <- gsub("^\\d{1,3}[kK][vV]", "", 
+                               # df_2017$plant)
+
+df_2017 <- df_2017[!is.na(df_2017$capacity), ]
+```
+
+```{r ap2}
+appendix2 <- read_excel("./data/appendix2.xlsx")
+appendix2 <- appendix2[,-c(2,4,6)]
+colnames(appendix2) <- c("plant",  "parent_company", "op_time")
+
+#--------------------------------------------# delete 110kv etc name prefix
+appendix2$plant <- gsub("^\\d{1,3}[kK][vV]", "",
+                               appendix2$plant)
+
+
+```
+
+```{r alternatv_parent}
+df_2017_2 <- df_2017[,-9]
+df_2017_2 <- merge(df_2017_2, appendix2, by = "plant", all = T, incomparables = T, no.dups = T)
+
+df_2017_2 <- df_2017_2[!is.na(df_2017_2$capacity), ]
+
+df_2017_2$parent_company <- replace_na(df_2017_2$parent_company, "else")
+```
+
+
+
+#--------------------------------------------
+## 2. data 181920
+
+```{r 1819year#读取}
+pp_list_2 <- list.files(path = "../18_19/")
+xlist_2 <- paste("../18_19/", list.files("../18_19"), sep = "")
+```
+
+
+```{r 1819year#数据清洗, warning = F, message = F}
+All2 <- lapply(xlist_2, function(filename){
+  read_xls(filename, skip = 12, col_names = F)
+})
+
+#--------------------------------------------读取
+for (f in 1:30) {
+  All2[[f]]$monthyear <- pp_list_2[f]
+}
+#--------------------------------------------添加时间
+drop_li <- c("...7")
+All2[[17]] <- All2[[17]][ , !(names(All2[[17]]) %in% drop_li)]
+drop_li <- c("...8","...9","...10")
+All2[[22]] <- All2[[22]][ , !(names(All2[[22]]) %in% drop_li)]
+
+for (f in 1:30){
+  names(All2[[f]]) <- c(1:8)
+}
+
+
+```
+
+
+```{r 1819year#数据清洗2, warning = F}
+
+df <- do.call(rbind.data.frame, All2)
+
+colnames(df) <- c("num", "plant", "capacity", "designed_capacity", "complete", "generated_el", "time", "yearmonth")
+
+df <- df[!grepl("^\\d{1,2}[[:punct:]]", df$plant), ] # delete all number start rows. (those are integrated company data) #1. 
+df <- df[!grepl("^[[:alpha:]][[:punct:]]", df$plant), ] # delete which has letters as serial number.
+df <- df[!grepl("^[一, 二, 三, 四, 五, 六, 七, 八, 九, 十]{1,3}[.、]", df$plant), ]
+
+
+df_1819 <- df[, -1]
+
+```
+
+```{r 1819year#数据清洗3}
+
+df_1819 <- mutate(df_1819, yearmonth = 
+                    gsub("[[:punct:]]xls", "", df_1819$yearmonth)) 
+
+df_1819 <- df_1819 %>%
+  mutate(month = gsub("\\d{2}[[:punct:]]",
+                      "",
+                      df_1819$yearmonth)) 
+
+df_1819$month <- df_1819$month %>% as.numeric() 
+
+
+
+#--------------------------------------------# month
+ 
+
+df_1819 <- mutate(df_1819, 
+                 year = gsub("[[:punct:]]\\d{1,2}", "", df_1819$yearmonth))
+                    
+
+# df_1819 %>% head
+#--------------------------------------------# year
+
+df_1819 <- df_1819[, -7]
+```
+
+
+#--------------------------------------------
+##2.1 parent company
+
+```{r}
+# grep("^\\d{2,3}[kK][Vv]", df_1819$plant)
+df_1819$plant <- gsub("^\\d{1,3}[kK][vV]", "",
+                               df_1819$plant)
+
+
+df_1819 <- merge(df_1819, appendix2, by = "plant", all = T, incomparables = T, no.dups = T)
+
+df_1819 <- df_1819[!is.na(df_1819$capacity), ]
+
+df_1819$parent_company <- replace_na(df_1819$parent_company, "else")
+
+```
+
+
+
+
+#--------------------------------------------
+
+## 3. data 16-19 comb
+```{r combination#合并}
+df <- rbind(df_2017_2, df_1819)
+df <- df[!grepl("乐平", df$plant),] # delete 乐平电厂，messed up
+
+df$time <- df$time %>% as.numeric() %>% round(3)
+df$generated_el <- df$generated_el %>% as.numeric() %>% round(3)
+df$complete <- df$complete %>% as.numeric() %>% round(3)
+
+
+#--------------------------------------------
+
+
+df$parent_company[df$parent_company == "其他"] = "else"
+df$parent_company[df$parent_company == "其它电厂"] = "else"
+df$parent_company[df$parent_company == "其它"] = "else"
+```
+
+
+```{r write#存储}
+# df <- df[order(df$plant), ]
+df$plant <- gsub("光伏电站", "光伏", df$plant)
+ # substring(pp_data$area, 1, 2) %>% unique
+df$plant <- gsub("忻州|晋城|运城|大同|太原|阳泉|晋中|临汾|朔州|长治|吕梁","", df$plant)
+df <- df[order(df$plant), ]
+
+df$plant <- gsub("右玉圣水塘", "圣水塘风电场", df$plant)
+# df[grep("光伏电", df$plant), ]
+
+
+df <- df[order(df$plant), ]
+#--------------------------------------------
+for (t in 1:40){
+  for (i in 1:12396){
+    if(df$parent_company[i] == "else"){
+      if(isTRUE((df$plant[i] == df$plant[i+1]) == T)){
+        if(isTRUE((df$parent_company[i+1] != "else") == T)){
+          df$parent_company[i] = df$parent_company[i+1]
+      }
+    }
+  }
+  }
+  t = t+1
+}
+
+for (t in 1:40){
+  for (i in 1:12396){
+    if(df$parent_company[i] == "else"){
+      if(isTRUE((df$plant[i] == df$plant[i-1]) == T)){
+        if(isTRUE((df$parent_company[i-1] != "else") == T)){
+          df$parent_company[i] = df$parent_company[i-1]
+      }
+    }
+  }
+  }
+  t = t+1
+}
+
+#--------------------------------------------
+# df_water <- df[grep("[水]", df$plant), ]
+
+# df$plant[2] == df$plant[2+1]
+```
+
+
+```{r write#存储2}
+write.csv(df, file = "./data/PP_data.csv")
+```
+
+<!-- #-------------------------------------------- -->
+#--------------------------------------------
+#--------------------------------------------
+#--------------------------------------------
+
+```{r reread}
+df <- read.csv("./data/PP_data.csv")
+```
+<!-- #-------------------------------------------- -->
+
+
+```{r, warning = F}
+df <- df[!is.na(df$complete), ]
+dfp <- df %>% group_by(month, year) %>% summarise(sum(complete))
+dfp$year <- as.factor(dfp$year)
+```
+
+
+```{r}
+p  <- ggplot(dfp) +
+  geom_line(aes(x = month, 
+                y = `sum(complete)`, 
+                group = year,
+                color = year)) +
+  scale_x_continuous(n.breaks = 12)  +
+  theme(axis.text.x = element_text(angle = 25, hjust = 1)) + 
+  labs(title  = "Power-plant electricity generated",
+       x = "month",
+       y = "sum energy generated per month")
+p +  theme(panel.background = element_rect(fill = "gray87"), 
+    plot.background = element_rect(fill = "antiquewhite", 
+        size = 1.1))
+# gg theme assist
+```
+
+
