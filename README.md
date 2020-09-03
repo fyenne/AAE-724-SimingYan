@@ -21,5 +21,7 @@ is the data in my computer, it is a little bit messed up. But the final dataset 
 @@ econ.Rmd @@
 is webscraping script which i used to scrap Shanxi Bureau of statistics. Unluckily not sufficient data can be used.
 
+the .xls document is one of the 43 .xls documents that i obtained. Just used as an example to show what i have done to them so far.
+
 # please ignore pppj.Rmd & Untitled.Rmd 
 ``` 
