@@ -15,7 +15,7 @@ are early data manipulating scripts.
 is a document combining powerplant data and covid data. plus regression works.
 
 @@ alotofdata.RData @@
-is the data in my computer, it is little bit messed up. But the final dataset named as
+is the data in my computer, it is a little bit messed up. But the final dataset named as
 + "pp_data"
 
 @@ econ.Rmd @@
