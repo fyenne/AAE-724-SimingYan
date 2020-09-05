@@ -115,11 +115,11 @@ stg <- function(...){
 
 ```{r}
 aq_list <- list.files(path = "../airquality/") 
-xlist <- paste("../airquality/", list.files("../airquality"), sep = "")
+xlista <- paste("../airquality/", list.files("../airquality"), sep = "")
 ```
 
 ```{r}
-All <- lapply(xlist, function(filename){
+Alla <- lapply(xlista, function(filename){
     print(paste("Merging", filename, sep = " "))
     read.delim(filename, header = T, sep = ",")
 })
@@ -135,10 +135,10 @@ tsts <- c(1:11)
 for (i in 1:11){
   tsts[i] <- gsub("[[:punct:]]", "", aq_list[i])
   tsts[i] <- gsub("airqualitytxt", "", tsts[i])
-  All[[i]][,"area2"] <- tsts[i]
+  Alla[[i]][,"area2"] <- tsts[i]
 }
 
-remove(tsts)
+# remove(tsts)
 
 ```
 
@@ -146,21 +146,21 @@ remove(tsts)
 ```{r time_change}
 
 for (j in 1:11){
-  All[[j]]$date <- All[[j]]$date %>% as.Date
-  All[[j]][c("year", "month", "day")] <- str_split_fixed(All[[j]]$date, "-", 3) #  change to year month date
-  All[[j]] <- All[[j]][!is.na(All[[j]]$pm10), ] 
-  All[[j]] <- All[[j]][!is.na(All[[j]]$pm25), ] 
-  All[[j]] <- filter(All[[j]], year >= 2016)
+  Alla[[j]]$date <- Alla[[j]]$date %>% as.Date
+  Alla[[j]][c("year", "month", "day")] <- str_split_fixed(Alla[[j]]$date, "-", 3) #  change to year month date
+  Alla[[j]] <- Alla[[j]][!is.na(Alla[[j]]$pm10), ] 
+  Alla[[j]] <- Alla[[j]][!is.na(Alla[[j]]$pm25), ] 
+  Alla[[j]] <- filter(Alla[[j]], year >= 2016)
 }
 
-All2 <- All
+All2 <- Alla
 ```
 
 
 ```{r}
 # calculate means
 for (i in 1:11){
-  All2[[i]] <- All[[i]] %>% 
+  All2[[i]] <- Alla[[i]] %>% 
     group_by(year, month, area2) %>% 
     summarise(mean(pm25), mean(pm10), 
               mean(o3), mean(no2),
@@ -184,10 +184,10 @@ air_data_final$month<- air_data_final$month %>% as.numeric()
 for (i in 1:11){
   tsts[i] <- gsub("[[:punct:]]", "", aq_list[i])
   tsts[i] <- gsub("airqualitytxt", "", tsts[i])
-  All[[i]][,"area2"] <- tsts[i]
+  Alla[[i]][,"area2"] <- tsts[i]
 }
 
-air_data_final$year <- gsub("20", "", air_data_final$year)
+air_data_final$year <- gsub("^20", "", air_data_final$year)
 ```
 
 ```{r}

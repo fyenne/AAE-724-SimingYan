@@ -341,16 +341,16 @@ write.csv(pp_data, file = "./data/pp_data_real.csv")
 
 ## 65. combine pollution_data
 ```{r}
-# pp_data %>% str
-# air_data_final %>% str
-# pp_data %>% group_by(year) %>% summarise(n())
-# air_data_final %>% group_by(year) %>% summarise(n())
+pp_data %>% str
+air_data_final %>% str
+pp_data %>% group_by(year) %>% summarise(n())
+air_data_final %>% group_by(year) %>% summarise(n())
 
-# pp_data$area3
-# air_data_final$area3
-# air_data_final <- read.csv("./data/air_data_final.csv")
-# dada <- merge(pp_data, air_data_final, by = c("year", "month", "area3"), all = T)
-# dada <- dada[!dada$plant %>% is.na() == T,]
+pp_data$area3
+air_data_final$area3
+air_data_final <- read.csv("./data/air_data_final.csv")
+dada <- merge(pp_data, air_data_final, by = c("year", "month", "area3"), all = T)
+dada <- dada[!dada$plant %>% is.na() == T,]
 ```
 
 #--------------------------------------------

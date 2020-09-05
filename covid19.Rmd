@@ -326,7 +326,76 @@ gpt(df_big5_year_comp %>% filter(year == 20))+geom_line(aes(x = yearmon, y = `me
 
 #--------------------------------------------
 
-### Prediction
+### 4. causal inference
+
+#--------------------------------------------
+```{r}
+library(lfe) #felm
+```
+
+```{r}
+pp_data %>% names
+# pp_data_dummy <- fastDummies::dummy_cols(pp_data, select_columns = c("month", "year", "area3"))
+pp_data$yearmon <- as.yearmon(paste(pp_data$year, pp_data$month), "%y%m")
+
+comp.mean = (pp_data %>% group_by(yearmon) %>% summarise(mean(complete)) %>% ungroup())
+pp_data_test <- merge(comp.mean, pp_data, by = "yearmon")
+names(pp_data_test)[2] = "mean.com"
+#--------------------------------------------
+
+pp_data_dummy <- select(pp_data_test, c(-generated_el, -time, -op_time, -area, -plant, -parent_company))
+
+pp_data_dummy$spr_festival <- "0"
+
+pp_data_dummy <- mutate(pp_data_dummy, spr_festival = ifelse(month == 1 & year != 18 | 
+                                                               month ==2 & year == 18, "1", "0"))
+# pp_data_dummy %>% filter(year == 18) %>% group_by(month) %>% slice(5)
+
+pp_data_dummy <- mutate(pp_data_dummy, bf_covid = ifelse(year != 20 | year == 20 & month == 1, "1", "0"))
+
+#--------------------------------------------
+```
+
+
+```{r}
+pp_data_dummy <- select(pp_data_dummy, c(-month, -year))
+pp_data_dummy %>% names
+# which(is.na(pp_data_dummy) == T)
+```
+
+
+```{r}
+#--------------------------------------------
+# two different way to creat naive model.
+reg1 <- lm(complete ~ big_five + spr_festival+bf_covid+area3, data = pp_data_dummy) # +as.factor(yearmon)
+# felm(complete ~ big_five + spr_festival+bf_covid|area3, data = pp_data_dummy) %>% summary()
+
+
+coef1 <- summary(reg1)$coef
+summary(reg1)$coef %>% head(5)
+```
+
+
+```{r}
+#--------------------------------------------
+# two different way to creat naive model with interaction terms.
+
+reg2 <- lm(complete ~ big_five + big_five:spr_festival + big_five:bf_covid + as.factor(yearmon) + area3, data = pp_data_dummy)
+(reg2 %>% summary)$coef %>% data.frame() %>% view
+
+felm(complete ~ big_five + big_five:spr_festival + big_five:bf_covid | 
+       as.factor(yearmon) + area3, data = pp_data_dummy) %>% stg
+#--------------------------------------------
+
+
+
+```
+
+#--------------------------------------------
+
+
+
+### 5. Prediction
 
 ```{r}
 # library(trelliscopejs)
@@ -347,19 +416,9 @@ myControl <- trainControl(
 )
 ```
 
-```{r}
-pp_data %>% names
-# pp_data_dummy <- fastDummies::dummy_cols(pp_data, select_columns = c("month", "year", "area3"))
-pp_data$yearmon <- as.yearmon(paste(pp_data$year, pp_data$month), "%y%m")
-comp.mean = (pp_data %>% group_by(yearmon) %>% summarise(mean(complete)) %>% ungroup())
-pp_data_test <- merge(comp.mean, pp_data, by = "yearmon")
-names(pp_data_test)[2] = "mean.com"
-#--------------------------------------------
 
-pp_data_dummy <- select(pp_data, c(-capacity, -generated_el, -time, -op_time, -area, -plant))
-pp_data_before <- pp_data_dummy %>% filter(year != 20)
-pp_data_after <- pp_data_dummy %>% filter(year == 20)
-```
+
+
 
 
 ```{r}
@@ -381,38 +440,51 @@ pp_test = pp_data_before[-index,]
 
 tuneGrid <- data.frame(
     alpha = seq(0, 1, length = 5),
-    lambda = seq(0.0001, 1, length = 20)
+    lambda = seq(0, 1, length = 20)
 )
 
 # Fit random forest: model
 lr_model <- train(
-  complete ~ . ,
+  mean.com ~ . ,
   data = pp_train, 
-  method = "glmnet",
-  tuneGrid = tuneGrid,
-  trControl = myControl
+  method = "lm"
+  # tuneGrid = tuneGrid,
+  # trControl = myControl
 )
 
 # Print model to console
 # tuneGrid
 # lr_model
-plot(lr_model)
+# plot(lr_model)
 ```
 
 ```{r}
-lr_model$bestTune
+# lr_model$bestTune
 # lr_model$finalModel ## dont run
 # pp_test <- pp_test %>% filter(pp_test$plant_1 != c("chongfudianchang", "kunpengguangfu", "shangpoguangfu", "wuxiangyongxinguangfu"))
 # which(pp_test$plant_1 == "chongfudianchang")
 
-mod2$xlevels[["y"]] <- union(mod2$xlevels[["y"]], levels(test$y))
+# mod2$xlevels[["y"]] <- union(mod2$xlevels[["y"]], levels(test$y))
 
-pred_complete <- predict(lr_model, newdata = pp_test)
+pred_mean.com <- predict(lr_model, newdata = pp_test)
+pp_test <- cbind(pp_test, pred_mean.com)
 ```
 
 
 ```{r}
 
+p11 <- ggplot(pp_test, aes(x = pp_test$pred_mean.com, y=pp_test$mean.com)) + 
+  geom_point(alpha=0.8, col ="grey") + 
+  # scale_x_continuous(limits=c(0,100)) +
+  # scale_y_continuous(limits=c(0,100)) +
+  geom_abline(intercept=0,slope=1) +
+  geom_smooth(se=0,method = "lm") +
+  coord_fixed(1) +
+  ggtitle("LR")
+p11
+
+LR_RMSE <- sqrt(sum((pp_test$pred_mean.com-pp_test$mean.com)^2)/nrow(pp_test))
+LR_RMSE
 ```
 
 
