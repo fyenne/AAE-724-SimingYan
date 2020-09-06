@@ -114,6 +114,11 @@ stg <- function(...){
           keep.stat = c("n", "ser"),
           digits = 5)
 }
+
+mod_stargazer <- function(output.file, ...) {
+  output <- capture.output(stargazer(...))
+  cat(paste(output, collapse = "\n"), "\n", file=output.file, append=F)
+}
 ```
 
 
@@ -362,9 +367,33 @@ dada <- dada[!dada$plant %>% is.na() == T,]
 ## 66. writedown pollution*plant datas
 
 ```{r write#存1储}
-# write.csv(dada, file = "./data/plant_air_data.csv")
+write.csv(dada, file = "./data/plant_air_data.csv")
+dada <- read.csv("./data/plant_air_data.csv")
 ```
 
+```{r}
+names(dada)
+# dada$b5_density <- 
+
+# unique(dada$area3)
+# which(dada$area3 == "NA")
+dada <- filter(dada, dada$area3 != "NA")
+big5_density <- aggregate(as.numeric(big_five)~area3, data = dada, mean)
+dada <- merge(dada, big5_density, by = "area3")
+names(dada)[27] <- "b5_density"
+# dada %>% group_by(area3) %>% summarise(mean(as.numeric(dada$big_five)))
+
+reg_air <- felm(`mean.pm25.` ~ complete + `Fossil.fuel` + wind + Hydro + photovoltaic  + b5_density +
+       `mean.co.`+ `mean.pm10.` + `mean.o3.` + `mean.no2.` + `mean.so2.`| 
+       yearmon, data = dada)
+
+stargazer(reg_air, type = "text")
+
+
+
+mod_stargazer("reg_air.txt", reg_air, type = "text")
+ 
+```
 
 
 

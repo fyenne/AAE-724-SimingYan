@@ -136,6 +136,12 @@ gpt_area <- function(in_data, in_x, in_y, in_times, heading, heading_x,heading_y
        x = heading_x,
        y = heading_y)
 }
+
+mod_stargazer <- function(output.file, ...) {
+  output <- capture.output(stargazer(...))
+  cat(paste(output, collapse = "\n"), "\n", file=output.file, append=F)
+}
+
 ggthemr('light',type = 'outer')
 
 ```
@@ -383,11 +389,16 @@ summary(reg1)$coef %>% head(5)
 reg2 <- lm(complete ~ big_five + big_five:spr_festival + big_five:bf_covid + as.factor(yearmon) + area3, data = pp_data_dummy)
 (reg2 %>% summary)$coef %>% data.frame() %>% view
 
-felm(complete ~ big_five + big_five:spr_festival + big_five:bf_covid | 
-       as.factor(yearmon) + area3, data = pp_data_dummy) %>% stg
+reg_covid <- felm(complete ~ big_five + big_five:spr_festival + big_five:bf_covid + 
+                    big_five:bf_covid:Hydro + big_five:bf_covid:wind + 
+                    big_five:bf_covid:`Fossil-fuel` + big_five:bf_covid:photovoltaic| 
+       as.factor(yearmon) + area3, data = pp_data_dummy) %>%
+  stargazer(type = "text")
+            # omit=c("big_five0:spr_festival1","big_five1:bf_covid1"))
 #--------------------------------------------
 
-
+mod_stargazer("regcovid.text", reg_covid,type = "text",
+            omit=c("big_five0:spr_festival1","big_five1:bf_covid1"))
 
 ```
 
