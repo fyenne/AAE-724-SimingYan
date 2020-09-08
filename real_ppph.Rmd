@@ -79,6 +79,9 @@ library(RColorBrewer)
 library(readxl)
 library(openxlsx)
 library(zoo)
+
+
+ggthemr('light',type = 'outer')
 ```
 
 ```{r functions, warning=F, message=F, include = F}
@@ -407,9 +410,7 @@ p  <- ggplot(dfp) +
   labs(title  = "Power-plant electricity generated",
        x = "month",
        y = "sum energy generated per month")
-p +  theme(panel.background = element_rect(fill = "gray87"), 
-    plot.background = element_rect(fill = "antiquewhite", 
-        size = 1.1))
+ggsave(filename = "./el-gen.png", plot = p, width = 12)
 # gg theme assist
 ```
 

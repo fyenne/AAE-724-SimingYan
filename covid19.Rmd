@@ -344,11 +344,11 @@ pp_data %>% names
 # pp_data_dummy <- fastDummies::dummy_cols(pp_data, select_columns = c("month", "year", "area3"))
 pp_data$yearmon <- as.yearmon(paste(pp_data$year, pp_data$month), "%y%m")
 
-comp.mean = (pp_data %>% group_by(yearmon) %>% summarise(mean(complete)) %>% ungroup())
-pp_data_test <- merge(comp.mean, pp_data, by = "yearmon")
-names(pp_data_test)[2] = "mean.com"
+comp.mean = (pp_data %>% group_by(yearmon, area3) %>% summarise(mean(complete)) %>% ungroup())
+pp_data_test <- merge(comp.mean, pp_data, by = c("yearmon", "area3"))
+names(pp_data_test)[3] = "mean.com"
 #--------------------------------------------
-
+ 
 pp_data_dummy <- select(pp_data_test, c(-generated_el, -time, -op_time, -area, -plant, -parent_company))
 
 pp_data_dummy$spr_festival <- "0"
@@ -367,18 +367,56 @@ pp_data_dummy <- mutate(pp_data_dummy, bf_covid = ifelse(year != 20 | year == 20
 pp_data_dummy <- select(pp_data_dummy, c(-month, -year))
 pp_data_dummy %>% names
 # which(is.na(pp_data_dummy) == T)
+which(pp_data_dummy$area3 == "NA")
+pp_data_dummy <- pp_data_dummy[-which(pp_data_dummy$area3 == "NA"), ]
+
+which(pp_data_dummy$big_five == 1) %>% length
+pp_data_dummy$complete[which(pp_data_dummy$big_five == 1)] %>% sum()
+# 2664.8/2766
+# 0.96341
+pp_data_dummy$complete[which(pp_data_dummy$big_five != 1)] %>% sum()
+
+# 0.59136
+# which(pp_data_dummy$big_five != 1) %>% length
+# 5655.2/9563
+
+compar_big5 <- data.frame(big5 = c("1","0") %>% as.factor(), avg_com = c(0.96341, 0.59136), n = c(2766, 9563))
+
+```
+
+```{r}
+gpt(compar_big5) + aes(x = big5) +
+  geom_bar(aes(weights = avg_com, fill = avg_com %>% as.factor())) +
+  geom_boxplot(aes(x = big5, y = n/9000, color = n %>% as.factor()), alpha = I(.3)) +
+  geom_text(data = compar_big5,
+            aes(x = big5,
+                y = n/9000,
+                label= n),
+            vjust = -0.3) +
+  labs(fill = "average_completed per month", 
+       color = "total amount")
 ```
 
 
 ```{r}
 #--------------------------------------------
+str(pp_data_dummy)
+# table(pp_data_dummy$big_five)
+# pp_data_dummy$big_five <- relevel(pp_data_dummy$big_five, ref = "1")
+# DF$b = relevel(DF$b, ref=3)
 # two different way to creat naive model.
-reg1 <- lm(complete ~ big_five + spr_festival+bf_covid+area3, data = pp_data_dummy) # +as.factor(yearmon)
-# felm(complete ~ big_five + spr_festival+bf_covid|area3, data = pp_data_dummy) %>% summary()
+reg1 <- lm(complete ~ spr_festival*big_five + bf_covid*spr_festival+ big_five*bf_covid  +
+             area3
+           , data = pp_data_dummy) # +as.factor(yearmon)
 
+# v
+# felm(complete ~ big_five + spr_festival+bf_covid|area3, data = pp_data_dummy) %>% summary()
+# 
 
 coef1 <- summary(reg1)$coef
-summary(reg1)$coef %>% head(5)
+summary(reg1)$coef
+
+mod_stargazer("reg1_naive.text", reg1, type = "text")
 ```
 
 
@@ -389,21 +427,34 @@ summary(reg1)$coef %>% head(5)
 reg2 <- lm(complete ~ big_five + big_five:spr_festival + big_five:bf_covid + as.factor(yearmon) + area3, data = pp_data_dummy)
 (reg2 %>% summary)$coef %>% data.frame() %>% view
 
-reg_covid <- felm(complete ~ big_five + big_five:spr_festival + big_five:bf_covid + 
-                    big_five:bf_covid:Hydro + big_five:bf_covid:wind + 
-                    big_five:bf_covid:`Fossil-fuel` + big_five:bf_covid:photovoltaic| 
-       as.factor(yearmon) + area3, data = pp_data_dummy) %>%
-  stargazer(type = "text")
+reg_covid <- felm(complete ~ big_five*spr_festival + big_five*bf_covid + 
+                    big_five*bf_covid*Hydro + big_five*bf_covid*wind + 
+                    big_five*bf_covid*`Fossil-fuel` + big_five*bf_covid*photovoltaic|area3, data = pp_data_dummy)
             # omit=c("big_five0:spr_festival1","big_five1:bf_covid1"))
 #--------------------------------------------
 
-mod_stargazer("regcovid.text", reg_covid,type = "text",
-            omit=c("big_five0:spr_festival1","big_five1:bf_covid1"))
+mod_stargazer("reg_covid.text", reg_covid, type = "text")
 
+```
+
+
+#### 4.1 monthly fixed effect
+```{r}
+reg_covid_month <- felm(complete ~ big_five + big_five + 
+                    big_five*Hydro + big_five*wind + 
+                    big_five*`Fossil-fuel` + big_five*photovoltaic|area3 + yearmon, data = pp_data_dummy)
+reg_covid_month %>% stg
 ```
 
 #--------------------------------------------
 
+### 4.2 covid on different levels/
+
+
+
+
+
+#--------------------------------------------
 
 
 ### 5. Prediction

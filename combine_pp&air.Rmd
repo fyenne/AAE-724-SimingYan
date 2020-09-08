@@ -275,13 +275,20 @@ names(pp_data)[(length(names(pp_data))-3):length(names(pp_data))]  = c("wind", "
 # Hydroelectricity
 ```
 
-## 4.write data (8.21)
+## 4. write data (8.21)
 
 ```{r writewrite!}
 pp_data <- pp_data %>% select(-c(designed_capacity, area2))
 # write.csv(pp_data, file = "./data/pp_data_real.csv")
 #--------------------------------------------
 
+
+# setorder(pp_data , yearmon)%>% select(-op_time, -plant_1)
+
+# 4,482,900 nationwide coal gen el
+pp_data$complete %>% sum()
+# # 6,994,700
+# 8326.3/4482900
 ```
 
 ## 5. modification
@@ -369,10 +376,13 @@ dada <- dada[!dada$plant %>% is.na() == T,]
 ```{r write#存1储}
 write.csv(dada, file = "./data/plant_air_data.csv")
 dada <- read.csv("./data/plant_air_data.csv")
+names(pp_data)
 ```
 
 ```{r}
 names(dada)
+# ,
+dada %>% select("area3", "plant", "complete", "mean.pm25.", "mean.pm10.", "mean.o3.", "mean.no2." ,"mean.so2." , "mean.co." ,"b5_density")
 # dada$b5_density <- 
 
 # unique(dada$area3)
@@ -394,7 +404,6 @@ stargazer(reg_air, type = "text")
 mod_stargazer("reg_air.txt", reg_air, type = "text")
  
 ```
-
 
 
 

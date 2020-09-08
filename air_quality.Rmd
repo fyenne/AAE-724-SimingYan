@@ -108,6 +108,11 @@ stg <- function(...){
           keep.stat = c("n", "ser"),
           digits = 5)
 }
+
+mod_stargazer <- function(output.file, ...) {
+  output <- capture.output(stargazer(...))
+  cat(paste(output, collapse = "\n"), "\n", file=output.file, append=F)
+}
 ```
 
 
