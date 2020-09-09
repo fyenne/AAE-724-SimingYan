@@ -385,17 +385,28 @@ compar_big5 <- data.frame(big5 = c("1","0") %>% as.factor(), avg_com = c(0.96341
 ```
 
 ```{r}
-gpt(compar_big5) + aes(x = big5) +
+ggthemr('light',type = 'outer')
+comp_big5_plot <- gpt(compar_big5) + aes(x = big5) +
   geom_bar(aes(weights = avg_com, fill = avg_com %>% as.factor())) +
   geom_boxplot(aes(x = big5, y = n/9000, color = n %>% as.factor()), alpha = I(.3)) +
   geom_text(data = compar_big5,
             aes(x = big5,
                 y = n/9000,
                 label= n),
-            vjust = -0.3) +
+            size = 9,
+            vjust = 1) +
   labs(fill = "average_completed per month", 
-       color = "total amount")
+       color = "total amount",
+       title = "Comparation of big-five and non-big-five owned power plant") +
+  theme(text = element_text(size = 22),
+        plot.title = element_text(size = 25))+
+  xlab("is big_five comapny owned?") +
+  ylab("") 
+# comp_big5_plot
+
+ggsave("comp_big5_plot.png", plot = comp_big5_plot, width = 12)
 ```
+
 
 
 ```{r}

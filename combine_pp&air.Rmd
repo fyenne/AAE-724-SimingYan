@@ -335,6 +335,15 @@ which(pp_data$parent_company == 'else') %>% length
 pp_data$dup <- paste0(pp_data$year, pp_data$month, pp_data$plant, pp_data$complete)
 pp_data <- pp_data[!duplicated(pp_data$dup), ]
 pp_data <- select(pp_data, -"dup")
+
+for (i in 1:12360){
+  if (isTRUE(pp_data$plant[i] == "岚水电厂") == T){
+    pp_data$Hydro[i] = "0"
+    pp_data$Fossil.fuel[i] = "1"
+  }
+}
+
+# pp_data[(which(pp_data$plant == "岚水电厂")),]
 write.csv(pp_data, file = "./data/pp_data_real.csv")
 ```
 
