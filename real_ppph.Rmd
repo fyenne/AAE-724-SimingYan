@@ -377,6 +377,11 @@ for (t in 1:40){
 ```
 
 
+```{r}
+
+```
+
+
 ```{r write#存储2}
 write.csv(df, file = "./data/PP_data.csv")
 ```
@@ -620,7 +625,10 @@ pp_area_p5
 pp_area_p5$big_five <- pp_area_p5$big_five %>% as.factor()
 pp_area_p5$`mean(complete)` <- pp_area_p5$`mean(complete)` %>% round(3)
 pp_area_p5$`mean(capacity)` <- pp_area_p5$`mean(capacity)` %>% round(3)
+```
 
+
+```{r}
 p5 <- ggplot(pp_area_p5) +
   geom_col(aes(x = type_of_p, 
                 y = `mean(complete)`,
@@ -628,7 +636,7 @@ p5 <- ggplot(pp_area_p5) +
             size = 1,
            position = "dodge") +
   # scale_x_continuous(n.breaks = 6)  +
-  theme(text = element_text(size =16),
+  theme(text = element_text(size = 22),
         plot.title = element_text(size = 25),
         axis.text.x = element_text(angle = 0)) + 
   labs(title  = "Mean Electricity Generating by Type_of_plant",
@@ -636,11 +644,11 @@ p5 <- ggplot(pp_area_p5) +
        y = "Mean electricity generated (Gwh)")+
   geom_text(aes(x = type_of_p, y = `mean(complete)`, label = `mean(complete)`, group = big_five),
             position = position_dodge2(width = .82 , preserve = "single"),
-            vjust = -1,
+            vjust = -.3,
             angle = 0,
-            size = 4.5) +
-  scale_color_brewer(palette = "Set1")
-p5
+            size = 6) +
+  scale_fill_brewer(palette = "Set3")
+# p5
 
 #--------------------------------------------
 p6 <- ggplot(pp_area_p5) +
@@ -650,7 +658,7 @@ p6 <- ggplot(pp_area_p5) +
             size = 1,
            position = "dodge") +
   # scale_x_continuous(n.breaks = 6)  +
-  theme(text = element_text(size =16),
+  theme(text = element_text(size = 22),
         plot.title = element_text(size = 25),
         axis.text.x = element_text(angle = 0)) + 
   labs(title  = "Mean Capacity by Type_of_plant",
@@ -658,13 +666,13 @@ p6 <- ggplot(pp_area_p5) +
        y = "Mean Capacity (10k.kw)")+
   geom_text(aes(x = type_of_p, y = `mean(capacity)`, label = `mean(capacity)`, group = big_five),
             position = position_dodge2(width = .82 , preserve = "single"),
-            vjust = -1,
+            vjust = -.3,
             angle = 0,
-            size = 4.5) +
-  scale_color_brewer(palette = "Set1")
-p6
+            size = 6) +
+  scale_fill_brewer(palette = "Set3")
+# p6
 
-ggsave(filename = "./el-gen-type_of_p3.png", plot = p5, width = 12)
-ggsave(filename = "./el-gen-type_of_p4.png", plot = p6, width = 12)
+ggsave(filename = "../report/el-gen-type_of_p5.png", plot = p5, width = 12)
+ggsave(filename = "../report/el-gen-type_of_p6.png", plot = p6, width = 12)
 
 ```

@@ -117,24 +117,27 @@ stg <- function(...){
 
 gpt_area <- function(in_data, in_x, in_y, in_times, heading, heading_x,heading_y){
   gpt(in_data) +
-  geom_point(aes(x = in_x, 
-               y = in_times*in_y), 
-           alpha = I(.8)) +
-  geom_line(aes(x = in_x, 
-               y = in_times*in_y,
-               group = 1)) +
+  # geom_point(aes(x = in_x, 
+  #              y = in_times*in_y), 
+  #          alpha = I(.8)) +
+  # geom_line(aes(x = in_x, 
+  #              y = in_times*in_y,
+  #              group = 1)) +
   geom_bar(aes(x = in_x, 
                weight = in_y,
-               alpha = I(.3))) +
+               alpha = I(.9))) +
   theme(axis.text.x = element_text(angle = 0, hjust = .6)) +
   geom_text(data = in_data,
             aes(x = in_x,
                 y = in_y,
                 label= in_y),
+            size = 5, 
             vjust = -0.2) +
   labs(title  = heading,
        x = heading_x,
-       y = heading_y)
+       y = heading_y) +
+  theme(text = element_text(size = 22),
+        plot.title = element_text(size = 25))
 }
 
 mod_stargazer <- function(output.file, ...) {
@@ -207,12 +210,12 @@ gpt_china_covid_case <- gpt_area(confirm_plt,
                                  "Exsisting cases in China Mainland", 
                                  "month", 
                                  "sum") + 
-  scale_x_continuous(n.breaks = 7) 
+  scale_x_continuous(n.breaks = 7)
 
-ggsave(filename = "./covid_china_case.png", plot = gpt_china_covid_case, width = 12)
+ggsave(filename = "../report/covid_china_case.png", plot = gpt_china_covid_case, width = 12)
 # #--------------------------------------------
 
-# gpt_china_covid_case + 
+gpt_china_covid_case 
 #   geom_point(data = pp_data, x = month, y)
 ```
 
@@ -243,17 +246,20 @@ china_covid_el_gen <- gpt_area(plt1,
             aes(x = month,
                 y = `sum(complete)` * 100 ,
                 label= `sum(complete)`),
-            vjust = -0.2) +
+            vjust = -0.2,
+            size = 6) +
   scale_x_continuous(n.breaks = 7) 
 #--------------------------------------------
 china_covid_el_gen
-ggsave(filename = "./covid_el-gen_china.png", plot = china_covid_el_gen, width = 12)
+ggsave(filename = "../report/covid_el-gen_china.png", plot = china_covid_el_gen, width = 12)
 
 ```
 
 ```{r}
 covid_sx <- covid_sx %>% group_by(month) %>% summarise(sum(cases)) %>% cbind(pt1)
 covid_sx <- covid_sx[,-3]
+
+ggthemr('light',type = 'outer')
 
 shanxi_covid_el_gen <- gpt_area(covid_sx, 
                                 covid_sx$month, 
@@ -268,11 +274,13 @@ shanxi_covid_el_gen <- gpt_area(covid_sx,
             aes(x = month,
                 y = `sum(complete)` ,
                 label= `sum(complete)`),
-            vjust = -0.2) +
+            vjust = -0.2,
+            size = 5) +
   scale_x_continuous(n.breaks = 7) 
 shanxi_covid_el_gen
+
 #-------------------------------------------
-ggsave(filename = "./covid_el-gen_shanxi.png", plot = shanxi_covid_el_gen, width = 12)
+ggsave(filename = "../report/covid_el-gen_shanxi.png", plot = shanxi_covid_el_gen, width = 12)
 ```
 
 
@@ -282,13 +290,13 @@ ggsave(filename = "./covid_el-gen_shanxi.png", plot = shanxi_covid_el_gen, width
 #--------------------------------------------
 
 ```{r}
-p1 <- ggplot(pp_yrm_s.complete_plt) +
- aes(x = month, y = `sum(complete)`, colour = `as.factor(year)`) +
- geom_line(size = .5L) +
- scale_color_hue() +
- theme_minimal() + 
- scale_x_continuous(n.break = 12)
-p1 
+# p1 <- ggplot(pp_yrm_s.complete_plt) +
+#  aes(x = month, y = `sum(complete)`, colour = `as.factor(year)`) +
+#  geom_line(size = .5L) +
+#  scale_color_hue() +
+#  theme_minimal() + 
+#  scale_x_continuous(n.break = 12)
+# p1 
 ```
 
 
@@ -318,17 +326,98 @@ ggplot(plt2) +
 pp_data$big_five %>% table
 # 9594+2766 
 # 0     1 
-df_big5_year_comp <- pp_data %>% group_by(big_five, year, month) %>% summarise(mean(complete))
+df_big5_year_comp <- pp_data %>% group_by(big_five, year, month) %>% summarise(mean.com = mean(complete),
+                                                                               mean.cap = mean(capacity))
 
 # df_big5_year_comp <- df_big5_year_comp[-c(1,6), ]
 names(df_big5_year_comp)
 df_big5_year_comp$yearmon <- as.yearmon(paste(df_big5_year_comp$year,df_big5_year_comp$month), "%y%m")
 
- 
+
+#--------------------------------------------
 
 
 gpt(df_big5_year_comp %>% filter(year == 20))+geom_line(aes(x = yearmon, y = `mean(complete)`, color = big_five))
 ```
+#--------------------------------------------
+#### 3.5 plots of big5 
+
+```{r}
+ggthemr('light',type = 'outer')
+
+comp_big5_plot <- gpt(compar_big5) + aes(x = big5) +
+  geom_bar(aes(weights = avg_com, fill = big5)) +
+  geom_text(data = compar_big5,
+            aes(x = big5,
+                y = avg_com %>% round(3),
+                label= avg_com),
+            size = 9,
+            hjust = .7) +
+  labs(fill = "Owner Type") +
+  theme(text = element_text(size = 22),
+        plot.title = element_text(size = 25))+
+  xlab("") +
+  ylab("") +
+  scale_fill_brewer(palette = "Set3") +
+  coord_flip()
+comp_big5_plot
+#--------------------------------------------
+
+
+comp_big5_plot3 <- gpt(compar_big5) + aes(x = big5) +
+  geom_bar(aes(weights = avg_cap, fill = big5)) +
+  geom_text(data = compar_big5,
+            aes(x = big5,
+                y = avg_cap %>% round(3),
+                label= avg_cap),
+            size = 9,
+            hjust = .7) +
+  labs(fill = "Owner Type") +
+  theme(text = element_text(size = 22),
+        plot.title = element_text(size = 25))+
+  xlab("") +
+  ylab("") +
+  scale_fill_brewer(palette = "Set3") +
+  coord_flip()
+comp_big5_plot3
+
+#--------------------------------------------
+compar_big5$n2 <- compar_big5$n/sum(compar_big5$n) %>% round(3)
+# cumsum(compar_big5$n2) - 0.5*compar_big5$n2
+
+comp_big5_share <-
+  gpt(compar_big5) +
+  geom_bar(aes(x = "", weight = n2, fill = big5), width = 1, position = "identity") +
+  geom_text(aes(x = "", y = cumsum(n2) - 0.5*n2,
+                label= n),
+            size = 9,
+            vjust = 1) +
+  coord_polar("y", start=0) +
+  theme_void() + 
+  # average_completed per month
+  labs(fill = "Owner Type",
+       title = "Comparation of big-five and non-big-five owned power plant",
+       subtitle = "Average Completed per month") +
+  scale_fill_brewer(palette = "Set3") +
+  theme(text = element_text(size = 22),
+        plot.title = element_text(size = 25),
+        legend.position = "none")
+comp_big5_share
+
+#--------------------------------------------
+#--------------------------------------------
+
+ggsave("../report/comp_big5_share.png", plot = comp_big5_share, width = 12)
+ggsave("../report/comp_big5_plot.png", plot = comp_big5_plot, width = 12)
+```
+
+
+```{r}
+#--------------------------------------------
+
+  ggsave("../report/comp_big5_plot.png", plot = comp_big5_plot, width = 12)
+```
+
 
 #--------------------------------------------
 
@@ -362,6 +451,8 @@ pp_data_dummy <- mutate(pp_data_dummy, bf_covid = ifelse(year != 20 | year == 20
 #--------------------------------------------
 ```
 
+#--------------------------------------------
+## 4.01 creat comparation data
 
 ```{r}
 pp_data_dummy <- select(pp_data_dummy, c(-month, -year))
@@ -369,42 +460,46 @@ pp_data_dummy %>% names
 # which(is.na(pp_data_dummy) == T)
 which(pp_data_dummy$area3 == "NA")
 pp_data_dummy <- pp_data_dummy[-which(pp_data_dummy$area3 == "NA"), ]
+pp_data_dummy2 <- pp_data_dummy %>% filter(Hydro != 1)
+#--------------------------------------------
 
-which(pp_data_dummy$big_five == 1) %>% length
-pp_data_dummy$complete[which(pp_data_dummy$big_five == 1)] %>% sum()
+which(pp_data_dummy2$big_five == 1) %>% length
+
+pp_data_dummy2$complete[which(pp_data_dummy2$big_five == 1)] %>% sum()
 # 2664.8/2766
 # 0.96341
-pp_data_dummy$complete[which(pp_data_dummy$big_five != 1)] %>% sum()
-
+pp_data_dummy2$complete[which(pp_data_dummy2$big_five != 1)] %>% sum()
 # 0.59136
-# which(pp_data_dummy$big_five != 1) %>% length
-# 5655.2/9563
+# which(pp_data_dummy2$big_five != 1) %>% length
 
-compar_big5 <- data.frame(big5 = c("1","0") %>% as.factor(), avg_com = c(0.96341, 0.59136), n = c(2766, 9563))
+# exclude hydro
+# 5402/9563
+# 0.56489
+#--------------------------------------------
 
-```
+pp_data_dummy2$capacity[which(pp_data_dummy2$big_five == 1)] %>% sum()
+# 82218/2766
+# 29.725
+pp_data_dummy2$capacity[which(pp_data_dummy2$big_five != 1)] %>% sum()
 
-```{r}
-ggthemr('light',type = 'outer')
-comp_big5_plot <- gpt(compar_big5) + aes(x = big5) +
-  geom_bar(aes(weights = avg_com, fill = avg_com %>% as.factor())) +
-  geom_boxplot(aes(x = big5, y = n/9000, color = n %>% as.factor()), alpha = I(.3)) +
-  geom_text(data = compar_big5,
-            aes(x = big5,
-                y = n/9000,
-                label= n),
-            size = 9,
-            vjust = 1) +
-  labs(fill = "average_completed per month", 
-       color = "total amount",
-       title = "Comparation of big-five and non-big-five owned power plant") +
-  theme(text = element_text(size = 22),
-        plot.title = element_text(size = 25))+
-  xlab("is big_five comapny owned?") +
-  ylab("") 
-# comp_big5_plot
+# 201875/9563
+# 21.11
 
-ggsave("comp_big5_plot.png", plot = comp_big5_plot, width = 12)
+# 189912/9563
+# 19.859
+#--------------------------------------------
+
+compar_big5 <- data.frame(big5 = c("1","0") %>% as.factor(), 
+                          avg_com = c(0.96341, 0.59136), 
+                          avg_cap = c(29.725, 21.11), 
+                          avg_com.nHydro = c(0.96341, 0.56489), 
+                          avg_cap.nHydro = c(29.725,19.859), 
+                          n = c(2766, 9563))
+#--------------------------------------------
+
+
+unique((pp_data_dummy2 %>% filter(capacity >= 30))$plant_1) %>% length
+unique((pp_data_dummy2 %>% filter(capacity < 30))$plant_1) %>% length
 ```
 
 
