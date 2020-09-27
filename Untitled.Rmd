@@ -6,35 +6,38 @@ output:
     html_document:
       theme: spacelab
       keep_md: true
-      toc: yes
-      toc_float: true
       highlight: haddock
 
 ---
 
 ```{r setup, echo=FALSE, cache=FALSE, include = F}
 library(knitr)
-# library(rmdformats)
-
 ## Global options
 options(max.print="75")
 knitr::opts_chunk$set(
 	fig.width = 7,
 	message = FALSE,
 	warning = FALSE,
-	cache = TRUE,
-	comment = NA,
+	# cache = TRUE,
+	# comment = NA,
 	dpi = 300,
-	prompt = FALSE,
-	# tidy = TRUE,
-	qwraps2_markup = "markdown"
+	# prompt = FALSE,
+	tidy = TRUE,
+	qwraps2_markup = "markdown",
+	comment=NA, prompt=FALSE, cache=TRUE, echo=TRUE, results='asis'
 )
 opts_knit$set(width=75)
-# knitr::opts_chunk$set()
 options(digits=5)
 options(scipen=5)
-# knitr::opts_chunk$set(warning = F, message=F)
 
+
+# st_options(bootstrap.css     = FALSE,       # Already part of the theme so no need for it
+#            plain.ascii       = FALSE,       # One of the essential settings
+#            style             = "rmarkdown", # Idem.
+#            dfSummary.silent  = TRUE,        # Suppresses messages about temporary files
+#            footnote          = NA,          # Keeping the results minimalistic
+#            subtitle.emphasis = FALSE)       # For the vignette theme, this gives better results.
+#                                             # For other themes, using TRUE might be preferable.
 ```
 
 ### set
@@ -70,16 +73,18 @@ library(pinyin)
 library(ggthemr)
 library(kableExtra)
 library(plotly)
+
+library(summarytools)
 ```
 
 ```{r functions, warning=F, message=F, include = F}
 kbt <- function(...){
   knitr::kable(..., format.args = list(big.mark = ',', scientific = F)) %>%
-    kableExtra::kable_styling(c("striped", "hover", "condensed"),
+    kableExtra::kable_styling(c("striped", "condensed"),
                                full_width = F,
                                position = "center",
                                row_label_position = "c") %>%
-   row_spec(0, bold = T, color = "white", background = "#004d1f")
+   row_spec(0, bold = T, color = "white", background = "#43B563CF")
 }
 
 gpt <- function(...){
@@ -137,12 +142,14 @@ ggthemr('light',type = 'outer')
 pp_data <- read.csv("./data/pp_data_real.csv")
 ```
 
+#--------------------------------------------
+## 1. summary data
 
-```{r, echo = F}
+```{r, echo = F, eval=FALSE}
 # percent(9563 / (9563 + 2766))
 pp_data$Fossil.fuel <- as.numeric(pp_data$Fossil.fuel)
 pp_data$big_five <- as.numeric(pp_data$big_five)
-# pp_summary <- (pp_data %>% data.frame() %>% summary) %>% data.frame() 
+# pp_summary <- (pp_data %>% data.frame() %>% summary) %>% data.frame()
 # # pp_summary$Var2[22]
 # pp_summary %>% filter(Var2 == "   complete")
 
@@ -156,7 +163,8 @@ our_summary1 <-
   list("Plant" =
        list("Unique Names of Plants" = ~ length(unique(plant))),
       "Electricity generated per month" =
-       list("min"       = ~ min(complete),
+       list("Electricity generated per month" = ~ print(""),
+            "min"       = ~ min(complete),
             "median"    = ~ median(complete),
             "max"       = ~ max(complete),
             "mean (sd)" = ~ qwraps2::mean_sd(complete))
@@ -164,12 +172,13 @@ our_summary1 <-
 
 # length(pp_data$plant %>% unique)
 # pp_data %>% group_by(type_of_p) %>% (max(yearmon) %>% as.Date() - min(yearmon) %>% as.Date())
- 
+
 # unique(paste0(pp_data$big_five, pp_data$plant)) %>% length
 
-summary_table(group_by(pp_data,type_of_p), our_summary1) %>% kbt
+summary_table(group_by(pp_data, type_of_p), our_summary1) %>% kbt %>%
+  add_header_above(header = c("Observations Level Summary over Type of Plants" = 5), bold = T, background = "#FAF33230" , font_size = 18)
+#--------------------------------------------
 
-# summary_table(dplyr::group_by(mtcars2, cyl_factor), our_summary1)
 
 pp_data_unique <- pp_data[which(!duplicated(pp_data$plant) == T),]
 #--------------------------------------------
@@ -178,23 +187,28 @@ our_summary2 <-
   list("Plant" =
        list("Unique Names of Plants" = ~ length(unique(plant))),
       "Electricity generated per month" =
-       list("min"       = ~ min(complete),
+       list("Electricity generated per month" = ~ print(""),
+            "min"       = ~ min(complete),
             "median"    = ~ median(complete),
             "max"       = ~ max(complete),
             "mean (sd)" = ~ qwraps2::mean_sd(complete)),
        "Plant Capacity" =
-       list("min"       = ~ min(capacity),
+       list("Plant Capacity" = ~ print(""),
+            "min"       = ~ min(capacity),
             "median"    = ~ median(capacity),
             "max"       = ~ max(capacity),
             "mean (sd)" = ~ qwraps2::mean_sd(capacity)),
        "City" =
        list("Unique Names of Cities" = ~ length(unique(area3))),
       "Owned by Big-Five"  =
-       list("Owned"     = ~ sum(big_five))
+       list("Owned by Big-Five" = ~ print(""),
+            "Owned"     = ~ sum(big_five))
 )
 
 
-summary_table(group_by(pp_data_unique, type_of_p), our_summary2) %>% kbt
+summary_table(group_by(pp_data_unique, type_of_p), our_summary2) %>%
+  kbt %>%
+  add_header_above(header = c("Plants Level Summary over Type of Plants" = 5), bold = T,  background = "#FAF33230" , font_size = 18)
 
 #--------------------------------------------
 # city
@@ -203,23 +217,27 @@ our_summary3 <-
   list("Plant" =
        list("Unique Names of Plants" = ~ length(unique(plant))),
       "Electricity generated per month" =
-       list("min"       = ~ min(complete),
+       list("Electricity generated per month" = ~ print(""),
+            "min"       = ~ min(complete),
             "median"    = ~ median(complete),
             "max"       = ~ max(complete),
             "mean (sd)" = ~ qwraps2::mean_sd(complete)),
        "Plant Capacity" =
-       list("min"       = ~ min(capacity),
+       list("Plant Capacity" = ~ print(""),
+            "min"       = ~ min(capacity),
             "median"    = ~ median(capacity),
             "max"       = ~ max(capacity),
             "mean (sd)" = ~ qwraps2::mean_sd(capacity)),
        "City" =
        list("Unique Names of Cities" = ~ length(unique(area3))),
-      "Owned by Big-Five"  =
-       list("Owned"     = ~ sum(big_five))
+       "Owned by Big-Five"  =
+       list("Owned by Big-Five" = ~ print(""),
+            "Owned"     = ~ sum(big_five))
 )
 
-summary_table(group_by(pp_data_unique, city), our_summary3) %>% kbt
-
+summary_table(group_by(pp_data_unique, city), our_summary3) %>%
+  kbt %>%
+  add_header_above(header = c("Plants Level Summary over City Type" = 3), bold = T, background = "#FAF33230" , font_size = 18)
 #--------------------------------------------
 
 # area3
@@ -227,19 +245,56 @@ our_summary4 <-
   list("Plant" =
        list("Unique Names of Plants" = ~ length(unique(plant))),
       "Electricity generated per month" =
-       list("min"       = ~ min(complete),
+       list("Electricity generated per month" = ~ print(""),
+            "min"       = ~ min(complete),
             "median"    = ~ median(complete),
             "max"       = ~ max(complete),
             "mean (sd)" = ~ qwraps2::mean_sd(complete)),
        "Plant Capacity" =
-       list("min"       = ~ min(capacity),
+       list("Plant Capacity" = ~ print(""),
+            "min"       = ~ min(capacity),
             "median"    = ~ median(capacity),
             "max"       = ~ max(capacity),
             "mean (sd)" = ~ qwraps2::mean_sd(capacity)),
       "Owned by Big-Five"  =
-       list("Owned"     = ~ sum(big_five))
+       list("Owned by Big-Five" = ~print("") ,
+            "Owned"     = ~ sum(big_five))
 )
 
-summary_table(group_by(pp_data_unique, area3), our_summary4) %>% kbt
+summary_table(group_by(pp_data_unique, area3), our_summary4)  %>%  kbt %>%
+  add_header_above(header = c("Plants Level Summary over Area" = 12), bold = T, background = "#FAF33230" , font_size = 18)
+```
 
+#--------------------------------------------
+
+## 2. corr data
+
+```{r, echo = F}
+# pp_data %>% names
+st_options(plain.ascii = FALSE)
+# print(dfSummary(pp_data[, -c(1,2,3,6,7,8,9,10,11,12,14,20, 21)], style = 'grid', graph.magnif = 0.75, 
+#           valid.col = FALSE, tmp.img.dir = "/tmp"), method = 'render')
+```
+
+
+```{r, echo = F}
+# print(dfSummary(tobacco, graph.magnif = 0.75))
+# pp_data[, -c(1,2,3,6,7,8,9,10,11,12,13, 14, 20, 21)] %>% str
+mcor <- cor(pp_data[, -c(1,2,3,6,7,8,9,10,11,12,13, 14,20, 21)])
+upper <- mcor
+
+upper[upper.tri(mcor)] <- "" 
+upper <- data.frame(upper)
+
+library(xtable)
+xtable <- xtable(upper) %>% data.frame()
+
+xtable(upper) %>% kbt %>%
+  add_header_above(header = c("Variable correlations" = 9), bold = T, background = "#FAF33230" , font_size = 18)
+
+
+
+# print(xtable(upper), type = "html", method = "render")
+
+# corstars(mtcars[,1:7], result="html")
 ```

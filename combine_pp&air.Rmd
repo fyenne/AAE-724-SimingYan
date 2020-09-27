@@ -641,7 +641,7 @@ our_summary2 <-
 )
 
 
-summary_table(group_by(pp_data_unique, type_of_p), our_summary2)
+summary_table(group_by(pp_data_unique, type_of_p), our_summary2) %>% qable
 
 #--------------------------------------------
 # city
@@ -688,6 +688,7 @@ our_summary4 <-
 )
 
 summary_table(group_by(pp_data_unique, area3), our_summary4) 
+
 
 ```
 
