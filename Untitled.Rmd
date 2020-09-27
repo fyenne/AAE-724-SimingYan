@@ -1,46 +1,245 @@
 ---
-title: "pp_pj2"
+title: "print"
 author: "Siming Yan"
-date: "8/6/2020"
-output: html_document
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output:
+    html_document:
+      theme: spacelab
+      keep_md: true
+      toc: yes
+      toc_float: true
+      highlight: haddock
+
 ---
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+```{r setup, echo=FALSE, cache=FALSE, include = F}
+library(knitr)
+# library(rmdformats)
+
+## Global options
+options(max.print="75")
+knitr::opts_chunk$set(
+	fig.width = 7,
+	message = FALSE,
+	warning = FALSE,
+	cache = TRUE,
+	comment = NA,
+	dpi = 300,
+	prompt = FALSE,
+	# tidy = TRUE,
+	qwraps2_markup = "markdown"
+)
+opts_knit$set(width=75)
+# knitr::opts_chunk$set()
+options(digits=5)
+options(scipen=5)
+# knitr::opts_chunk$set(warning = F, message=F)
+
+```
+
+### set
+ 
+```{r setup2, include=FALSE}
+
+library(knitr)
+library(dplyr)
+library(tidyr)
+library(lubridate)
+library(scales)
+library(stargazer)
 library(tidyverse)
-```
- 
-```{r}
-pp_data2 <- read.csv("./data/powerdata_2.csv")
-test_ppdata <- pp_data2[-c(1:140), ]
-el_gen2 <- {}
-el_gen2 <- as.numeric(test_ppdata$发电量.火力.山西) + 
-  as.numeric(test_ppdata$发电量.风力.山西) + 
-  as.numeric(test_ppdata$发电量.水力.山西) + 
-  as.numeric(test_ppdata$发电量.太阳能.山西)
-el_gen2 <- el_gen2[8:12] %>% as.data.frame()
-el_gen2$month <- c(3:7)
-el_gen2[,1] <- el_gen2[,1]*10
-
-pttt <- pt1[-c(1:2), ]
-pttt <- cbind(pttt, el_gen2)
-pttt$cha <- pttt$`sum(complete)` - pttt$.
-pttt$cha[1:4] %>% mean()
-```
- 
-```{r}
-read_xls("../18_19/20.4.xls")
-```
- 
-
-```{r}
-pp_data2 %>% names
-fin_in_out <- pp_data2[,c(1, 21:42)]
-fin_in_out %>% names
-# in million CNY
-# fiscal avanue, fiscal spending
-fin_in_out <- fin_in_out[-(1:25), ]
-names(fin_in_out)[1] <- "yearmonth"
-fin_in_out$yearmonth1 <- as.Date(fin_in_out$yearmonth, "%m%Y")
+# library(car)
+library(formatR)
+# library(plm)
+# library(lfe)
+library(data.table)
+# library(mlogit)
+# library(lmtest) #for coeftest() and bptest().
+# library(broom) #for glance() and tidy()
+# library(RCurl)# For the robust SE method 1
+# library(sandwich)
+library(texreg) 
+library(mice) #check NA
+# library(MatchIt)
+library(ggthemes)
+library(RColorBrewer)
+library(readxl)
+library(openxlsx)
+library(zoo)
+library(pinyin)
+library(ggthemr)
+library(kableExtra)
+library(plotly)
 ```
 
+```{r functions, warning=F, message=F, include = F}
+kbt <- function(...){
+  knitr::kable(..., format.args = list(big.mark = ',', scientific = F)) %>%
+    kableExtra::kable_styling(c("striped", "hover", "condensed"),
+                               full_width = F,
+                               position = "center",
+                               row_label_position = "c") %>%
+   row_spec(0, bold = T, color = "white", background = "#004d1f")
+}
+
+gpt <- function(...){
+  ggplot2::ggplot(...) + 
+    theme_minimal() +
+    theme(plot.title = element_text(face = "bold", size = 14, hjust = 0.5),
+      plot.subtitle = element_text(face = "italic", size = 12, hjust = 0.5), 
+      axis.text.x = element_text(angle = 0, hjust = 0.5))
+}
+
+stg <- function(...){
+  stargazer::stargazer(..., 
+          type = "text",
+          # style = "qje",
+          # title = "daily_kwh ~ post:encouraged|customer_id + no.bill|0|customer_id",
+          keep.stat = c("n", "ser"),
+          digits = 5)
+}
+
+gpt_area <- function(in_data, in_x, in_y, in_times, heading, heading_x,heading_y){
+  gpt(in_data) +
+  # geom_point(aes(x = in_x, 
+  #              y = in_times*in_y), 
+  #          alpha = I(.8)) +
+  # geom_line(aes(x = in_x, 
+  #              y = in_times*in_y,
+  #              group = 1)) +
+  geom_bar(aes(x = in_x, 
+               weight = in_y,
+               alpha = I(.9))) +
+  theme(axis.text.x = element_text(angle = 0, hjust = .6)) +
+  geom_text(data = in_data,
+            aes(x = in_x,
+                y = in_y,
+                label= in_y),
+            size = 5, 
+            vjust = -0.2) +
+  labs(title  = heading,
+       x = heading_x,
+       y = heading_y) +
+  theme(text = element_text(size = 22),
+        plot.title = element_text(size = 25))
+}
+
+mod_stargazer <- function(output.file, ...) {
+  output <- capture.output(stargazer(...))
+  cat(paste(output, collapse = "\n"), "\n", file=output.file, append=F)
+}
+
+ggthemr('light',type = 'outer')
+
+```
+
+```{r, include=F}
+pp_data <- read.csv("./data/pp_data_real.csv")
+```
+
+
+```{r, echo = F}
+# percent(9563 / (9563 + 2766))
+pp_data$Fossil.fuel <- as.numeric(pp_data$Fossil.fuel)
+pp_data$big_five <- as.numeric(pp_data$big_five)
+# pp_summary <- (pp_data %>% data.frame() %>% summary) %>% data.frame() 
+# # pp_summary$Var2[22]
+# pp_summary %>% filter(Var2 == "   complete")
+
+
+library(qwraps2)
+# options(qwraps2_markup = "markdown")
+#--------------------------------------------
+
+# type_of_p
+our_summary1 <-
+  list("Plant" =
+       list("Unique Names of Plants" = ~ length(unique(plant))),
+      "Electricity generated per month" =
+       list("min"       = ~ min(complete),
+            "median"    = ~ median(complete),
+            "max"       = ~ max(complete),
+            "mean (sd)" = ~ qwraps2::mean_sd(complete))
+  )
+
+# length(pp_data$plant %>% unique)
+# pp_data %>% group_by(type_of_p) %>% (max(yearmon) %>% as.Date() - min(yearmon) %>% as.Date())
+ 
+# unique(paste0(pp_data$big_five, pp_data$plant)) %>% length
+
+summary_table(group_by(pp_data,type_of_p), our_summary1) %>% kbt
+
+# summary_table(dplyr::group_by(mtcars2, cyl_factor), our_summary1)
+
+pp_data_unique <- pp_data[which(!duplicated(pp_data$plant) == T),]
+#--------------------------------------------
+# type_of_p
+our_summary2 <-
+  list("Plant" =
+       list("Unique Names of Plants" = ~ length(unique(plant))),
+      "Electricity generated per month" =
+       list("min"       = ~ min(complete),
+            "median"    = ~ median(complete),
+            "max"       = ~ max(complete),
+            "mean (sd)" = ~ qwraps2::mean_sd(complete)),
+       "Plant Capacity" =
+       list("min"       = ~ min(capacity),
+            "median"    = ~ median(capacity),
+            "max"       = ~ max(capacity),
+            "mean (sd)" = ~ qwraps2::mean_sd(capacity)),
+       "City" =
+       list("Unique Names of Cities" = ~ length(unique(area3))),
+      "Owned by Big-Five"  =
+       list("Owned"     = ~ sum(big_five))
+)
+
+
+summary_table(group_by(pp_data_unique, type_of_p), our_summary2) %>% kbt
+
+#--------------------------------------------
+# city
+
+our_summary3 <-
+  list("Plant" =
+       list("Unique Names of Plants" = ~ length(unique(plant))),
+      "Electricity generated per month" =
+       list("min"       = ~ min(complete),
+            "median"    = ~ median(complete),
+            "max"       = ~ max(complete),
+            "mean (sd)" = ~ qwraps2::mean_sd(complete)),
+       "Plant Capacity" =
+       list("min"       = ~ min(capacity),
+            "median"    = ~ median(capacity),
+            "max"       = ~ max(capacity),
+            "mean (sd)" = ~ qwraps2::mean_sd(capacity)),
+       "City" =
+       list("Unique Names of Cities" = ~ length(unique(area3))),
+      "Owned by Big-Five"  =
+       list("Owned"     = ~ sum(big_five))
+)
+
+summary_table(group_by(pp_data_unique, city), our_summary3) %>% kbt
+
+#--------------------------------------------
+
+# area3
+our_summary4 <-
+  list("Plant" =
+       list("Unique Names of Plants" = ~ length(unique(plant))),
+      "Electricity generated per month" =
+       list("min"       = ~ min(complete),
+            "median"    = ~ median(complete),
+            "max"       = ~ max(complete),
+            "mean (sd)" = ~ qwraps2::mean_sd(complete)),
+       "Plant Capacity" =
+       list("min"       = ~ min(capacity),
+            "median"    = ~ median(capacity),
+            "max"       = ~ max(capacity),
+            "mean (sd)" = ~ qwraps2::mean_sd(capacity)),
+      "Owned by Big-Five"  =
+       list("Owned"     = ~ sum(big_five))
+)
+
+summary_table(group_by(pp_data_unique, area3), our_summary4) %>% kbt
+
+```

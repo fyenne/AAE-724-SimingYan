@@ -91,8 +91,8 @@ library(kableExtra)
 ```{r functions, warning=F, message=F, include = F}
 kbt <- function(...){
   knitr::kable(..., format.args = list(big.mark = ',', scientific = F)) %>%
-    kableExtra::kable_styling(c("striped", "hover", "condensed"),
-                               full_width = F,
+    kableExtra::kable_styling(c("striped", "condensed"),
+                               full_width = T,
                                position = "center",
                                row_label_position = "c") %>%
    row_spec(0, bold = T, color = "white", background = "#004d1f")
@@ -352,7 +352,7 @@ pp_data <- mutate(pp_data, spr_festival = ifelse(month == 1 & year != 18 |
 pp_data <- mutate(pp_data, bf_covid = ifelse(year != 20 | year == 20 & month == 1, "1", "0"))
 ```
 
-
+### 5.55 real writes
 ```{r}
 # pp_data[(which(pp_data$plant == "岚水电厂")),]
 pp_data$Hydro <- pp_data$Hydro %>% as.numeric()
@@ -500,25 +500,131 @@ for (t in 1:40){
 
 which((pp_data$op_time) == 0)
 ```
+#--------------------------------------------
+### 5.85 functions 
 
+```{r The iteration function}
+iteration_func <- function(variable_in){
+  for (t in 1:40){
+    for (i in 1:12360){
+       if(isTRUE(variable_in[i] == "else") == T){
+          if(isTRUE((pp_data$plant[i] == pp_data$plant[i-1]) == T)){
+            if(isTRUE((variable_in[i-1] !=  "else") == T)){
+              variable_in[i] = variable_in[i-1]
+      }
+    }
+  }
+  }
+  t = t+1
+  }
+  for (t in 1:40){
+    for (i in 1:12396){
+      if(isTRUE(variable_in[i] == "else") == T){
+         if(isTRUE((pp_data$plant[i] == pp_data$plant[i-1]) == T)){
+           if(isTRUE((variable_in[i-1] != "else") == T)){
+             variable_in[i] = variable_in[i-1]
+      }
+    }
+  }
+  }
+  t = t+1
+}
+  
+}
+```
+
+```{r}
+pp_data$area3 %>% unique
+pp_data[which(is.na(pp_data$area3)),]
+
+#--------------------------------------------
+
+pp_data[grep("冷口",pp_data$plant), ]
+# pp_data[1309,]$area
+pp_data[grep("绛县冷口",pp_data$plant), ]$plant = "冷口风电场"
+pp_data[1310,]$area3 = "yuncheng"
+pp_data[1310,]$area = "运城市绛县"
+pp_data[grep("冷口",pp_data$plant), ]$parent_company <- "北京天润新能源"
+pp_data[grep("冷口",pp_data$plant), ]$op_time <- 2014
+pp_data[grep("冷口",pp_data$plant), ]$Fossil.fuel <- 0
+pp_data[grep("冷口",pp_data$plant), ]$wind <- 1
+pp_data[grep("冷口",pp_data$plant), ]$type_of_p <- "wind"
+pp_data[grep("冷口",pp_data$plant), ]$plant_1 <- "lengkoufengdianchang"
+#--------------------------------------------
+
+
+pp_data[grep("燕家村",pp_data$plant), ]
+pp_data[8011,]$area = "忻州市岢岚县"
+pp_data[8011,]$area3 = "xinzhou"
+
+#--------------------------------------------
+pp_data[grep("瑶台山",pp_data$plant), ]
+pp_data[8346,]$area = "运城市夏县"
+pp_data[8346,]$area3 = "yuncheng"
+pp_data[grep("夏县瑶台山",pp_data$plant), ]$plant = "瑶台山风电场"
+pp_data[grep("瑶台山",pp_data$plant), ]$parent_company <- "北京天润新能源"
+# pp_data[grep("瑶台山",pp_data$plant), ]$op_time <- 2014
+pp_data[grep("瑶台山",pp_data$plant), ]$Fossil.fuel <- 0
+pp_data[grep("瑶台山",pp_data$plant), ]$wind <- 1
+pp_data[grep("瑶台山",pp_data$plant), ]$type_of_p <- "wind"
+pp_data[grep("瑶台山",pp_data$plant), ]$plant_1 <- "yaotaishanfengdianchang"
+
+
+pp_data[grep("龙溪光伏",pp_data$plant), ]
+pp_data[12360, ]$area <- pp_data[12359, ]$area
+pp_data[12360, ]$area3 <- pp_data[12359, ]$area3
+pp_data[12360, ]$parent_company <- pp_data[12359, ]$parent_company
+
+pp_data <- pp_data[which(!is.na(pp_data$area3)),]
+
+```
+
+```{r}
+# write.csv(pp_data, file = "./data/pp_data_real.csv")
+```
 
 ### 5.9 data summary
 
 ```{r}
 # percent(9563 / (9563 + 2766))
-# 
-# 
+pp_data$Fossil.fuel <- as.numeric(pp_data$Fossil.fuel)
+pp_data$big_five <- as.numeric(pp_data$big_five)
 # pp_summary <- (pp_data %>% data.frame() %>% summary) %>% data.frame() 
 # # pp_summary$Var2[22]
 # pp_summary %>% filter(Var2 == "   complete")
 
+
 library(qwraps2)
 options(qwraps2_markup = "markdown")
+#--------------------------------------------
 
+# type_of_p
 our_summary1 <-
   list("Plant" =
-       list("Unique" = ~ length(unique(plant))),
-      "Electricity generated" =
+       list("Unique Names of Plants" = ~ length(unique(plant))),
+      "Electricity generated per month" =
+       list("min"       = ~ min(complete),
+            "median"    = ~ median(complete),
+            "max"       = ~ max(complete),
+            "mean (sd)" = ~ qwraps2::mean_sd(complete))
+  )
+
+# length(pp_data$plant %>% unique)
+# pp_data %>% group_by(type_of_p) %>% (max(yearmon) %>% as.Date() - min(yearmon) %>% as.Date())
+ 
+# unique(paste0(pp_data$big_five, pp_data$plant)) %>% length
+
+summary_table(group_by(pp_data,type_of_p), our_summary1) 
+
+# summary_table(dplyr::group_by(mtcars2, cyl_factor), our_summary1)
+
+pp_data_unique <- pp_data[which(!duplicated(pp_data$plant) == T),]
+#--------------------------------------------
+# type_of_p
+our_summary2 <-
+  list("Plant" =
+       list("Unique Names of Plants" = ~ length(unique(plant))),
+      "Electricity generated per month" =
        list("min"       = ~ min(complete),
             "median"    = ~ median(complete),
             "max"       = ~ max(complete),
@@ -529,22 +635,90 @@ our_summary1 <-
             "max"       = ~ max(capacity),
             "mean (sd)" = ~ qwraps2::mean_sd(capacity)),
        "City" =
-       list("Unique"       = ~ length(unique(area3)))
-       )
+       list("Unique Names of Cities" = ~ length(unique(area3))),
+      "Owned by Big-Five"  =
+       list("Owned"     = ~ sum(big_five))
+)
 
-length(pp_data$plant %>% unique)
-# our_summary1 <-
-#   list("Plant Capacity" =
-#        list("min"       = ~ min(capacity),
-#             "median"    = ~ median(capacity),
-#             "max"       = ~ max(capacity),
-#             "mean (sd)" = ~ qwraps2::mean_sd(capacity)))
-       
-      
-summary_table(pp_data, our_summary1) 
+
+summary_table(group_by(pp_data_unique, type_of_p), our_summary2)
+
+#--------------------------------------------
+# city
+
+our_summary3 <-
+  list("Plant" =
+       list("Unique Names of Plants" = ~ length(unique(plant))),
+      "Electricity generated per month" =
+       list("min"       = ~ min(complete),
+            "median"    = ~ median(complete),
+            "max"       = ~ max(complete),
+            "mean (sd)" = ~ qwraps2::mean_sd(complete)),
+       "Plant Capacity" =
+       list("min"       = ~ min(capacity),
+            "median"    = ~ median(capacity),
+            "max"       = ~ max(capacity),
+            "mean (sd)" = ~ qwraps2::mean_sd(capacity)),
+       "City" =
+       list("Unique Names of Cities" = ~ length(unique(area3))),
+      "Owned by Big-Five"  =
+       list("Owned"     = ~ sum(big_five))
+)
+
+summary_table(group_by(pp_data_unique, city), our_summary3) 
+
+#--------------------------------------------
+
+# area3
+our_summary4 <-
+  list("Plant" =
+       list("Unique Names of Plants" = ~ length(unique(plant))),
+      "Electricity generated per month" =
+       list("min"       = ~ min(complete),
+            "median"    = ~ median(complete),
+            "max"       = ~ max(complete),
+            "mean (sd)" = ~ qwraps2::mean_sd(complete)),
+       "Plant Capacity" =
+       list("min"       = ~ min(capacity),
+            "median"    = ~ median(capacity),
+            "max"       = ~ max(capacity),
+            "mean (sd)" = ~ qwraps2::mean_sd(capacity)),
+      "Owned by Big-Five"  =
+       list("Owned"     = ~ sum(big_five))
+)
+
+summary_table(group_by(pp_data_unique, area3), our_summary4) 
+
 ```
 
 
+```{r}
+
+output <- capture.output(file = "test1.html", summary_table(group_by(pp_data_unique, area3), our_summary4))
+cat(paste(output, collapse = "\n"), "\n", file = output.file, append = F)
+
+mod_sumtable <- function(output.file, ...) {
+  output <- capture.output(summary_table(...))
+  cat(paste(output, collapse = "\n"), "\n", file = output.file, append=F)
+}
+
+
+mod_sumtable("test1.html", group_by(pp_data_unique, area3), our_summary4)
+
+print(summary_table(group_by(pp_data_unique, area3), our_summary4), caption = "Hello world", markup = "markdown", env = "html")
+
+fileConn <- file("output2.html")
+output <- capture.output(print(summary_table(group_by(pp_data_unique, area3), our_summary4), caption = "Hello world", markup = "markdown"))
+cat(output, file=fileConn)
+close(fileConn)
+
+
+
+sink("output2.html")
+output <- capture.output(summary_table(group_by(pp_data_unique, area3), our_summary4))
+cat(output)
+sink()
+```
 
 
 #--------------------------------------------
