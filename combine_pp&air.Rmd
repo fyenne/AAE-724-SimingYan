@@ -578,9 +578,14 @@ pp_data[12360, ]$parent_company <- pp_data[12359, ]$parent_company
 pp_data <- pp_data[which(!is.na(pp_data$area3)),]
 
 ```
-
+#--------------------------------------------
+### 5.8.9 real write2 adn description
 ```{r}
 # write.csv(pp_data, file = "./data/pp_data_real.csv")
+
+pp_data$plant %>% unique %>% length
+pp_data$parent_company %>% unique %>% length
+# (pp_data[which(pp_data$year == 20), ])$month %>% max
 ```
 
 ### 5.9 data summary
@@ -723,6 +728,28 @@ sink()
 
 
 #--------------------------------------------
+```{r}
+library(expss)
+mtcars = apply_labels(mtcars,
+                      mpg = "Miles/(US) gallon",
+                      cyl = "Number of cylinders",
+                      disp = "Displacement (cu.in.)",
+                      hp = "Gross horsepower",
+                      drat = "Rear axle ratio",
+                      wt = "Weight (1000 lbs)",
+                      qsec = "1/4 mile time",
+                      vs = "Engine",
+                      vs = c("V-engine" = 0,
+                             "Straight engine" = 1),
+                      am = "Transmission",
+                      am = c("Automatic" = 0,
+                             "Manual"=1),
+                      gear = "Number of forward gears",
+                      carb = "Number of carburetors"
+)
+mtcars 
+cro(mtcars$am, mtcars$vs)
+```
 
 <!-- #-------------------------------------------- -->
  

@@ -430,6 +430,7 @@ library(lfe) #felm
 
 ```{r}
 pp_data %>% names
+
 # pp_data_dummy <- fastDummies::dummy_cols(pp_data, select_columns = c("month", "year", "area3"))
 pp_data$yearmon <- as.yearmon(paste(pp_data$year, pp_data$month), "%y%m")
 
