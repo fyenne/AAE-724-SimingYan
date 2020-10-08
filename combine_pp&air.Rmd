@@ -622,108 +622,117 @@ our_summary1 <-
 summary_table(group_by(pp_data,type_of_p), our_summary1) 
 
 # summary_table(dplyr::group_by(mtcars2, cyl_factor), our_summary1)
-
-pp_data_unique <- pp_data[which(!duplicated(pp_data$plant) == T),]
-#--------------------------------------------
-# type_of_p
-our_summary2 <-
-  list("Plant" =
-       list("Unique Names of Plants" = ~ length(unique(plant))),
-      "Electricity generated per month" =
-       list("min"       = ~ min(complete),
-            "median"    = ~ median(complete),
-            "max"       = ~ max(complete),
-            "mean (sd)" = ~ qwraps2::mean_sd(complete)),
-       "Plant Capacity" =
-       list("min"       = ~ min(capacity),
-            "median"    = ~ median(capacity),
-            "max"       = ~ max(capacity),
-            "mean (sd)" = ~ qwraps2::mean_sd(capacity)),
-       "City" =
-       list("Unique Names of Cities" = ~ length(unique(area3))),
-      "Owned by Big-Five"  =
-       list("Owned"     = ~ sum(big_five))
-)
+```
 
 
-summary_table(group_by(pp_data_unique, type_of_p), our_summary2) %>% qable
+```{r}
+
+pp_data_unique <- pp_data %>% group_by(plant) %>% 
+  summarise(mean.comp.plant = mean(complete))
+
+pp_data_unique <- merge(pp_data, pp_data_unique, by = "plant")
+pp_data_unique <- pp_data_unique[which(!duplicated(pp_data$plant) == T),]
 
 #--------------------------------------------
-# city
-
-our_summary3 <-
-  list("Plant" =
-       list("Unique Names of Plants" = ~ length(unique(plant))),
-      "Electricity generated per month" =
-       list("min"       = ~ min(complete),
-            "median"    = ~ median(complete),
-            "max"       = ~ max(complete),
-            "mean (sd)" = ~ qwraps2::mean_sd(complete)),
-       "Plant Capacity" =
-       list("min"       = ~ min(capacity),
-            "median"    = ~ median(capacity),
-            "max"       = ~ max(capacity),
-            "mean (sd)" = ~ qwraps2::mean_sd(capacity)),
-       "City" =
-       list("Unique Names of Cities" = ~ length(unique(area3))),
-      "Owned by Big-Five"  =
-       list("Owned"     = ~ sum(big_five))
-)
-
-summary_table(group_by(pp_data_unique, city), our_summary3) 
-
-#--------------------------------------------
-
-# area3
-our_summary4 <-
-  list("Plant" =
-       list("Unique Names of Plants" = ~ length(unique(plant))),
-      "Electricity generated per month" =
-       list("min"       = ~ min(complete),
-            "median"    = ~ median(complete),
-            "max"       = ~ max(complete),
-            "mean (sd)" = ~ qwraps2::mean_sd(complete)),
-       "Plant Capacity" =
-       list("min"       = ~ min(capacity),
-            "median"    = ~ median(capacity),
-            "max"       = ~ max(capacity),
-            "mean (sd)" = ~ qwraps2::mean_sd(capacity)),
-      "Owned by Big-Five"  =
-       list("Owned"     = ~ sum(big_five))
-)
-
-summary_table(group_by(pp_data_unique, area3), our_summary4) 
+# # type_of_p
+# our_summary2 <-
+#   list("Plant" =
+#        list("Unique Names of Plants" = ~ length(unique(plant))),
+#       "Electricity generated per month" =
+#        list("min"       = ~ min(complete),
+#             "median"    = ~ median(complete),
+#             "max"       = ~ max(complete),
+#             "mean (sd)" = ~ qwraps2::mean_sd(mean.comp.plant)),
+#        "Plant Capacity" =
+#        list("min"       = ~ min(capacity),
+#             "median"    = ~ median(capacity),
+#             "max"       = ~ max(capacity),
+#             "mean (sd)" = ~ qwraps2::mean_sd(capacity)),
+#        "City" =
+#        list("Unique Names of Cities" = ~ length(unique(area3))),
+#       "Owned by Big-Five"  =
+#        list("Owned"     = ~ sum(big_five))
+# )
+# 
+# 
+# summary_table(group_by(pp_data_unique, type_of_p), our_summary2) %>% qable
+# 
+# #--------------------------------------------
+# # city
+# 
+# our_summary3 <-
+#   list("Plant" =
+#        list("Unique Names of Plants" = ~ length(unique(plant))),
+#       "Electricity generated per month" =
+#        list("min"       = ~ min(complete),
+#             "median"    = ~ median(complete),
+#             "max"       = ~ max(complete),
+#             "mean (sd)" = ~ qwraps2::mean_sd(complete)),
+#        "Plant Capacity" =
+#        list("min"       = ~ min(capacity),
+#             "median"    = ~ median(capacity),
+#             "max"       = ~ max(capacity),
+#             "mean (sd)" = ~ qwraps2::mean_sd(capacity)),
+#        "City" =
+#        list("Unique Names of Cities" = ~ length(unique(area3))),
+#       "Owned by Big-Five"  =
+#        list("Owned"     = ~ sum(big_five))
+# )
+# 
+# summary_table(group_by(pp_data_unique, city), our_summary3) 
+# 
+# #--------------------------------------------
+# 
+# # area3
+# our_summary4 <-
+#   list("Plant" =
+#        list("Unique Names of Plants" = ~ length(unique(plant))),
+#       "Electricity generated per month" =
+#        list("min"       = ~ min(complete),
+#             "median"    = ~ median(complete),
+#             "max"       = ~ max(complete),
+#             "mean (sd)" = ~ qwraps2::mean_sd(complete)),
+#        "Plant Capacity" =
+#        list("min"       = ~ min(capacity),
+#             "median"    = ~ median(capacity),
+#             "max"       = ~ max(capacity),
+#             "mean (sd)" = ~ qwraps2::mean_sd(capacity)),
+#       "Owned by Big-Five"  =
+#        list("Owned"     = ~ sum(big_five))
+# )
+# 
+# summary_table(group_by(pp_data_unique, area3), our_summary4) 
 
 
 ```
 
 
 ```{r}
-
-output <- capture.output(file = "test1.html", summary_table(group_by(pp_data_unique, area3), our_summary4))
-cat(paste(output, collapse = "\n"), "\n", file = output.file, append = F)
-
-mod_sumtable <- function(output.file, ...) {
-  output <- capture.output(summary_table(...))
-  cat(paste(output, collapse = "\n"), "\n", file = output.file, append=F)
-}
-
-
-mod_sumtable("test1.html", group_by(pp_data_unique, area3), our_summary4)
-
-print(summary_table(group_by(pp_data_unique, area3), our_summary4), caption = "Hello world", markup = "markdown", env = "html")
-
-fileConn <- file("output2.html")
-output <- capture.output(print(summary_table(group_by(pp_data_unique, area3), our_summary4), caption = "Hello world", markup = "markdown"))
-cat(output, file=fileConn)
-close(fileConn)
-
-
-
-sink("output2.html")
-output <- capture.output(summary_table(group_by(pp_data_unique, area3), our_summary4))
-cat(output)
-sink()
+# 
+# output <- capture.output(file = "test1.html", summary_table(group_by(pp_data_unique, area3), our_summary4))
+# cat(paste(output, collapse = "\n"), "\n", file = output.file, append = F)
+# 
+# mod_sumtable <- function(output.file, ...) {
+#   output <- capture.output(summary_table(...))
+#   cat(paste(output, collapse = "\n"), "\n", file = output.file, append=F)
+# }
+# 
+# 
+# mod_sumtable("test1.html", group_by(pp_data_unique, area3), our_summary4)
+# 
+# print(summary_table(group_by(pp_data_unique, area3), our_summary4), caption = "Hello world", markup = "markdown", env = "html")
+# 
+# fileConn <- file("output2.html")
+# output <- capture.output(print(summary_table(group_by(pp_data_unique, area3), our_summary4), caption = "Hello world", markup = "markdown"))
+# cat(output, file=fileConn)
+# close(fileConn)
+# 
+# 
+# 
+# sink("output2.html")
+# output <- capture.output(summary_table(group_by(pp_data_unique, area3), our_summary4))
+# cat(output)
+# sink()
 ```
 
 

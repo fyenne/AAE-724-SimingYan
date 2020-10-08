@@ -1,5 +1,5 @@
 ---
-title: "print"
+title: "print making graphs 1"
 author: "Siming Yan"
 date: "`r format(Sys.time(), '%d %B, %Y')`"
 output:
@@ -175,12 +175,20 @@ our_summary1 <-
 
 # unique(paste0(pp_data$big_five, pp_data$plant)) %>% length
 
-summary_table(group_by(pp_data, type_of_p), our_summary1) %>% kbt %>%
+st1 <- summary_table(group_by(pp_data, type_of_p), our_summary1) %>% kbt %>%
   add_header_above(header = c("Observations Level Summary over Type of Plants" = 5), bold = T, background = "#FAF33230" , font_size = 18)
 #--------------------------------------------
+save_kable(st1, file = "../report/table_1.png")
+```
 
 
-pp_data_unique <- pp_data[which(!duplicated(pp_data$plant) == T),]
+```{r, echo = F, eval=FALSE}
+pp_data_unique <- pp_data %>% group_by(plant) %>% 
+  summarise(mean.comp.plant = mean(complete))
+
+pp_data_unique <- merge(pp_data, pp_data_unique, by = "plant")
+pp_data_unique <- pp_data_unique[which(!duplicated(pp_data$plant) == T),]
+
 #--------------------------------------------
 # type_of_p
 our_summary2 <-
@@ -188,15 +196,15 @@ our_summary2 <-
        list("Unique Names of Plants" = ~ length(unique(plant))),
       "Electricity generated per month" =
        list("Electricity generated per month" = ~ print(""),
-            "min"       = ~ min(complete),
+            # "min"       = ~ min(complete),
             "median"    = ~ median(complete),
-            "max"       = ~ max(complete),
-            "mean (sd)" = ~ qwraps2::mean_sd(complete)),
+            # "max"       = ~ max(complete),
+            "mean (sd)" = ~ qwraps2::mean_sd(mean.comp.plant)),
        "Plant Capacity" =
        list("Plant Capacity" = ~ print(""),
-            "min"       = ~ min(capacity),
+            # "min"       = ~ min(capacity),
             "median"    = ~ median(capacity),
-            "max"       = ~ max(capacity),
+            # "max"       = ~ max(capacity),
             "mean (sd)" = ~ qwraps2::mean_sd(capacity)),
        "City" =
        list("Unique Names of Cities" = ~ length(unique(area3))),
@@ -206,10 +214,12 @@ our_summary2 <-
 )
 
 
-summary_table(group_by(pp_data_unique, type_of_p), our_summary2) %>%
-  kbt %>%
-  add_header_above(header = c("Plants Level Summary over Type of Plants" = 5), bold = T,  background = "#FAF33230" , font_size = 18)
+st2 <- summary_table(group_by(pp_data_unique, type_of_p), our_summary2) %>%
+  kbt(format = "pip") %>%
+  add_header_above(header = c("Plants Level Summary over Type of Plants" = 5), 
+                   bold = T,  background = "#FAF33230" , font_size = 18)
 
+save_kable(st2, file = "../report/table_2.png", keep_tex = T, density = 600)
 #--------------------------------------------
 # city
 
@@ -218,15 +228,15 @@ our_summary3 <-
        list("Unique Names of Plants" = ~ length(unique(plant))),
       "Electricity generated per month" =
        list("Electricity generated per month" = ~ print(""),
-            "min"       = ~ min(complete),
+            # "min"       = ~ min(complete),
             "median"    = ~ median(complete),
-            "max"       = ~ max(complete),
-            "mean (sd)" = ~ qwraps2::mean_sd(complete)),
+            # "max"       = ~ max(complete),
+            "mean (sd)" = ~ qwraps2::mean_sd(mean.comp.plant)),
        "Plant Capacity" =
        list("Plant Capacity" = ~ print(""),
-            "min"       = ~ min(capacity),
+            # "min"       = ~ min(capacity),
             "median"    = ~ median(capacity),
-            "max"       = ~ max(capacity),
+            # "max"       = ~ max(capacity),
             "mean (sd)" = ~ qwraps2::mean_sd(capacity)),
        "City" =
        list("Unique Names of Cities" = ~ length(unique(area3))),
@@ -246,15 +256,15 @@ our_summary4 <-
        list("Unique Names of Plants" = ~ length(unique(plant))),
       "Electricity generated per month" =
        list("Electricity generated per month" = ~ print(""),
-            "min"       = ~ min(complete),
+            # "min"       = ~ min(complete),
             "median"    = ~ median(complete),
-            "max"       = ~ max(complete),
-            "mean (sd)" = ~ qwraps2::mean_sd(complete)),
+            # "max"       = ~ max(complete),
+            "mean (sd)" = ~ qwraps2::mean_sd(mean.comp.plant)),
        "Plant Capacity" =
        list("Plant Capacity" = ~ print(""),
-            "min"       = ~ min(capacity),
+            # "min"       = ~ min(capacity),
             "median"    = ~ median(capacity),
-            "max"       = ~ max(capacity),
+            # "max"       = ~ max(capacity),
             "mean (sd)" = ~ qwraps2::mean_sd(capacity)),
       "Owned by Big-Five"  =
        list("Owned by Big-Five" = ~print("") ,

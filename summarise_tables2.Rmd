@@ -1,0 +1,318 @@
+---
+title: "print2 making graphs"
+author: "Siming Yan"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output:
+    html_document:
+      theme: spacelab
+      keep_md: true
+      highlight: haddock
+
+---
+
+```{r setup, echo=FALSE, cache=FALSE, include = F}
+library(knitr)
+## Global options
+options(max.print="75")
+knitr::opts_chunk$set(
+	fig.width = 7,
+	message = FALSE,
+	warning = FALSE,
+	# cache = TRUE,
+	# comment = NA,
+	dpi = 300,
+	# prompt = FALSE,
+	tidy = TRUE,
+	qwraps2_markup = "markdown",
+	comment=NA, prompt=FALSE, cache=TRUE, echo=TRUE, results='asis'
+)
+opts_knit$set(width=75)
+options(digits=5)
+options(scipen=5)
+
+
+# st_options(bootstrap.css     = FALSE,       # Already part of the theme so no need for it
+#            plain.ascii       = FALSE,       # One of the essential settings
+#            style             = "rmarkdown", # Idem.
+#            dfSummary.silent  = TRUE,        # Suppresses messages about temporary files
+#            footnote          = NA,          # Keeping the results minimalistic
+#            subtitle.emphasis = FALSE)       # For the vignette theme, this gives better results.
+#                                             # For other themes, using TRUE might be preferable.
+```
+
+### set
+ 
+```{r setup2, include=FALSE}
+
+library(knitr)
+library(dplyr)
+library(tidyr)
+library(lubridate)
+library(scales)
+library(stargazer)
+library(tidyverse)
+# library(car)
+library(formatR)
+# library(plm)
+# library(lfe)
+library(data.table)
+# library(mlogit)
+# library(lmtest) #for coeftest() and bptest().
+# library(broom) #for glance() and tidy()
+# library(RCurl)# For the robust SE method 1
+# library(sandwich)
+library(texreg) 
+library(mice) #check NA
+# library(MatchIt)
+library(ggthemes)
+library(RColorBrewer)
+library(readxl)
+library(openxlsx)
+library(zoo)
+library(pinyin)
+library(ggthemr)
+library(kableExtra)
+library(plotly)
+
+library(summarytools)
+```
+
+```{r functions, warning=F, message=F, include = F}
+kbt <- function(...){
+  knitr::kable(..., format.args = list(big.mark = ',', scientific = F)) %>%
+    kableExtra::kable_styling(c("striped", "condensed"),
+                               full_width = F,
+                               position = "center",
+                               row_label_position = "c") %>%
+   row_spec(0, bold = T, color = "white", background = "#43B563CF")
+}
+
+gpt <- function(...){
+  ggplot2::ggplot(...) + 
+    theme_minimal() +
+    theme(plot.title = element_text(face = "bold", size = 14, hjust = 0.5),
+      plot.subtitle = element_text(face = "italic", size = 12, hjust = 0.5), 
+      axis.text.x = element_text(angle = 0, hjust = 0.5))
+}
+
+stg <- function(...){
+  stargazer::stargazer(..., 
+          type = "text",
+          # style = "qje",
+          # title = "daily_kwh ~ post:encouraged|customer_id + no.bill|0|customer_id",
+          keep.stat = c("n", "ser"),
+          digits = 5)
+}
+
+gpt_area <- function(in_data, in_x, in_y, in_times, heading, heading_x,heading_y){
+  gpt(in_data) +
+  # geom_point(aes(x = in_x, 
+  #              y = in_times*in_y), 
+  #          alpha = I(.8)) +
+  # geom_line(aes(x = in_x, 
+  #              y = in_times*in_y,
+  #              group = 1)) +
+  geom_bar(aes(x = in_x, 
+               weight = in_y,
+               alpha = I(.9))) +
+  theme(axis.text.x = element_text(angle = 0, hjust = .6)) +
+  geom_text(data = in_data,
+            aes(x = in_x,
+                y = in_y,
+                label= in_y),
+            size = 5, 
+            vjust = -0.2) +
+  labs(title  = heading,
+       x = heading_x,
+       y = heading_y) +
+  theme(text = element_text(size = 22),
+        plot.title = element_text(size = 25))
+}
+
+mod_stargazer <- function(output.file, ...) {
+  output <- capture.output(stargazer(...))
+  cat(paste(output, collapse = "\n"), "\n", file=output.file, append=F)
+}
+
+ggthemr('light',type = 'outer')
+
+```
+
+```{r, include=F}
+pp_data <- read.csv("./data/pp_data_real.csv")
+```
+
+#--------------------------------------------
+## 1. summary data
+```{r}
+library(expss)
+mtcars = apply_labels(mtcars,
+                      mpg = "Miles/(US) gallon",
+                      cyl = "Number of cylinders",
+                      disp = "Displacement (cu.in.)",
+                      hp = "Gross horsepower",
+                      drat = "Rear axle ratio",
+                      wt = "Weight (1000 lbs)",
+                      qsec = "1/4 mile time",
+                      vs = "Engine",
+                      vs = c("V-engine" = 0,
+                             "Straight engine" = 1),
+                      am = "Transmission",
+                      am = c("Automatic" = 0,
+                             "Manual"=1),
+                      gear = "Number of forward gears",
+                      carb = "Number of carburetors"
+)
+mtcars 
+cro(mtcars$am, mtcars$vs)
+```
+
+```{r, include=F}
+pp_data %>% names
+pp_data[, -c(1,2,3,6,7,11,13, 14,15,16,17,18,20)] %>% names
+```
+
+```{r}
+pp_data_2 <- data.frame(plant = "Names of the Plant",
+                      capacity = "Capacity of the plant in 10k Kilowatt-hour (10k.kWh)",
+                      complete = "Monthly electricity generated in a hundred million Kilowatt-hour (GWh)",
+                      month = "The operation time of month",
+                      year = "The operation time of month",
+                      parent_company = "The parent company name of the plant",
+                      area = "The plant location in county level"
+                      # big_five = c("Indicator of whether the plant is owned by the big five major cooperation")
+                      )
+pp_data_2 <- rbind((pp_data_2 %>% names()), pp_data_2)
+                    
+pp_data_2 <- pp_data_2 %>% transpose()
+names(pp_data_2) <- c("variable names", "variable descriptions")
+
+kbl(pp_data_2, caption = "Variable Description Table") %>%
+  kable_paper("striped", full_width = T) %>%
+  pack_rows("Plant characteristics", 1, 3) %>% 
+  pack_rows("Time variable", 4, 5) %>%
+  pack_rows("Other information", 6, 7) 
+#--------------------------------------------
+
+pp_data_des2 <- data.frame(
+                      big_five = c("Indicator of whether the plant is owned by the big five major cooperation", 
+                                   "1 for the plant owned by the big five major cooperation",
+                                   "0 for the plant not owned by the big five major cooperation",
+                                   "",
+                                   ""),
+                      type_of_p = c("Indicator of what is the plant type", 
+                                    "Hydro", 
+                                    "Fossil-Fuel", 
+                                    "Photovoltaic", 
+                                    "Wind"),
+                      city = c("Indicator of whether the plant is located in urban area", 
+                                   "1 for the plant is located in urban area",
+                                   "0 for the plant is located in suburban area",
+                                   "",
+                                   ""),
+                      bf_covid = c("Indicator of whether the production date is before or after outbreak of COVID-19", 
+                                   "1 for after the outbreak of COVID-19",
+                                   "0 for before the outbreak of COVID-19",
+                                   "",
+                                   ""),
+                      spr_festival = c("Indicator of whether the production month covers spring festival", 
+                                   "1 for cover spring festival",
+                                   "0 for not cover spring festival",
+                                   "",
+                                   "")
+                      
+                      )
+
+pp_data_des2 <- rbind((pp_data_des2 %>% names()), pp_data_des2)
+pp_data_des2 <- pp_data_des2 %>% transpose()
+
+
+names(pp_data_des2) <- c("variable names", "variable descriptions", "values","","","")
+
+
+kbl(pp_data_des2, caption = "Variable Description Table2") %>%
+  kable_paper("striped", full_width = T) %>% 
+  column_spec(3:6, bold = T, color = "white", background = "#D7261E")
+```
+
+```{r}
+# nationwide
+
+pp_data_lingyun_capacity <- data.frame(percentage = c(52.31, 34.19, 58.5,13.74),
+                                       types = c('fossil.fuel' ,'hydro' ,'wind' ,'photovoltaic')
+                      )
+#--------------------------------------------
+
+ 
+
+
+```
+
+
+```{r}
+pp_data_unique %>% group_by(type_of_p, big_five) %>% summarise(sum(capacity))
+
+pp_data_my_capacity <- data.frame(percentage = 
+                                    (c(2326.29/(5251.42+2326.29), 0, 117.00/(756.73+117.00), 391.73/(872.38+391.73))*100) %>% 
+                                    round(2),
+                                  types = c('fossil.fuel' ,'hydro' ,'photovoltaic', 'wind')
+                      )
+
+pp_data_my_capacity <- rbind(pp_data_lingyun_capacity, pp_data_my_capacity, by = 'types')
+
+pp_data_my_capacity <- pp_data_my_capacity[-9,] 
+pp_data_my_capacity[,3] <- c(0,0,0,0,1,1,1,1) %>% as.factor()
+names(pp_data_my_capacity)[3] <- "if_in_shanxi"
+
+pp_data_my_capacity$percentage <- as.numeric(pp_data_my_capacity$percentage)
+```
+
+
+```{r}
+ggthemr('light',type = 'outer')
+
+pp_data_my_capacity_plot <- gpt(pp_data_my_capacity)+
+  geom_bar(aes(x = types, weight = percentage, group = if_in_shanxi, fill = if_in_shanxi), position = 'dodge') +
+  geom_text(aes(x = types, y = percentage, label = percentage, group = if_in_shanxi), 
+            position = position_dodge2(width = .82 , preserve = "single"),
+            vjust = -.3, size = 6) +
+  theme(text = element_text(size = 22),
+        plot.title = element_text(size = 25),
+        plot.subtitle = element_text(size = 19),
+        axis.text.x = element_text(angle = 0)) + 
+  labs(title  = "Big-five owned plant Capacity percentage",
+       subtitle = "Comparation of China mainland vs Shanxi",
+       x = "Type of Plant",
+       y = "Percentage of Capacity") +
+  scale_fill_brewer(palette = "Set3")
+pp_data_my_capacity_plot
+
+ggsave(filename = "../report/b5_capa_compare.png", plot = pp_data_my_capacity_plot, width = 9)
+
+```
+
+
+```{r}
+# 46.67% total market share of production ele.
+pp_data_unique$mean.comp.plant
+pp_data_unique %>% group_by(big_five, type_of_p) %>% summarise(sum(mean.comp.plant))
+(pp_data_unique %>% group_by(big_five, type_of_p) %>% summarise(sum(mean.comp.plant)))[1:4,2] %>% sum
+# pp_data_unique$mean.comp.plant[1:4] %>% sum
+(81.0127+1.4106+6.3053)/(156.4627+3.4488+7.0956+15.3616	+81.0127+1.4106+6.3053)
+
+last_p <- data.frame(if_in_shanxi = c("0","1"),
+                     percent = c("46.67%", "32.73%"))
+last_pp <- gpt(last_p)+aes(x = if_in_shanxi, y = percent, fill=if_in_shanxi) + 
+  geom_col()  + labs(title  = "Big-five owned plant generation percentage",
+       subtitle = "Comparation of China mainland vs Shanxi",
+       x = "Type of Plant",
+       y = "Percentage of Capacity") +
+    theme(text = element_text(size = 22),
+        plot.title = element_text(size = 25),
+        plot.subtitle = element_text(size = 19),
+        axis.text.x = element_text(angle = 0)) + 
+  scale_fill_brewer(palette = "Set3")
+ggsave(filename = "../report/b5_capa_compare2.png", plot = last_pp, width = 9)
+```
+
+<!-- For this five cooperation, the total capacity of fossil-fuel power plants account for 52.31% of Chinese total fossil-fuel power plant capacity, respectively, hydro plants account for 34.19%, wind plants account for 58.5%, photovoltaic plants account for 13.74% (Lingyun Group, 2018). The market share of the five major cooperation accounts for 46.67% of total electricity production in 2018 (Xi, 2019). A previous study has shown the power plants of state-owned companies show lower unified (operational and environmental) efficiency than other companies (Zhang et al., 2014). While facing with pandemic, this study assumes the five major cooperation will be more sensitive to government orders and production behaviors are more flexible compares to those owned by private.  -->
