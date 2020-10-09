@@ -23,5 +23,8 @@ is webscraping script which i used to scrap Shanxi Bureau of statistics. Unlucki
 
 the .xls document is one of the 43 .xls documents that i obtained. Just used as an example to show what i have done to them so far.
 
+! summarise_table.Rmd
+is summarise tables script. used for generating tables and figures. Easier to knit.
+
 # please ignore pppj.Rmd & Untitled.Rmd 
 ``` 
