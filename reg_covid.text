@@ -1,58 +1,61 @@
 
-==============================================================
-                                       Dependent variable:    
-                                   ---------------------------
-                                            complete          
---------------------------------------------------------------
-big_five1                                     0.073           
-                                             (0.123)          
-                                                              
-spr_festival1                                -0.016           
-                                             (0.040)          
-                                                              
-bf_covid1                                     0.159           
-                                             (0.097)          
-                                                              
-Hydro1                                      1.238***          
-                                             (0.231)          
-                                                              
-wind1                                         0.025           
-                                             (0.103)          
-                                                              
-`Fossil-fuel`1                              0.907***          
-                                             (0.064)                                
- 
-big_five1:spr_festival1                      -0.115           
-                                             (0.084)          
-                                                              
-big_five1:bf_covid1                           0.023           
-                                             (0.133)          
-                                                      
-bf_covid1:Hydro1                             -0.161           
-                                             (0.259)          
-                                                              
-big_five1:wind1                              -0.032           
-                                             (0.185)          
-                                     
-big_five1:`Fossil-fuel`1                    0.523***          
-                                             (0.156)          
-                                                              
-bf_covid1:`Fossil-fuel`1                      0.145           
-                                             (0.109)         
-                                                                                
-bf_covid1:photovoltaic1                      -0.168           
-                                             (0.109)          
-        
-big_five1:bf_covid1:wind1                    -0.099           
-                                             (0.198)          
-                                                              
-big_five1:bf_covid1:`Fossil-fuel`1          0.464***          
-                                             (0.169)          
-                                                              
---------------------------------------------------------------
-Observations                                 12,329           
-R2                                            0.302           
-Adjusted R2                                   0.301           
-Residual Std. Error                    1.127 (df = 12303)     
-==============================================================
-Note:                              *p<0.1; **p<0.05; ***p<0.01 
+=================================================================================
+                                                         complete                
+                                                  (1)                 (2)        
+---------------------------------------------------------------------------------
+capacity                                       3.419***            3.590***      
+                                                (0.026)             (0.018)      
+                                                                                 
+city1                                            0.729               2.145       
+                                                (1.347)             (1.349)      
+                                                                                 
+big_five1                                     -32.579***           7.274***      
+                                                (5.689)             (1.435)                            
+                                                                                 
+type_of_p = hydro                                -76.738***                         
+                                               (14.229)                          
+                                                                                 
+type_of_p = photovoltaic                            4.623                           
+                                                (3.640)                          
+                                                                                 
+type_of_p = wind                                    2.344                           
+                                                (5.535)                          
+                                                                                 
+capacity:big_five1                             0.657***                          
+                                                (0.047)                          
+                                                                                 
+big_five1:spr_festival1                         -8.522*                          
+                                                (4.623)                          
+                                                                                 
+big_five1:bf_covid1                            12.391**                          
+                                                (5.795)                          
+                                                                                 
+big_five1:type_of_p = photovoltaic                26.326***                         
+                                                (8.769)                          
+                                                                                 
+big_five1:type_of_p = wind                        25.707***                         
+                                                (9.323)                          
+                                                                                 
+bf_covid1:type_of_p = hydro                        -23.535                          
+                                               (15.067)                          
+                                                                                 
+bf_covid1:type_of_p = photovoltaic                -9.085**                          
+                                                (3.884)                          
+                                                                                 
+bf_covid1:type_of_p = wind                         -6.909                           
+                                                (5.858)                          
+                                                                                 
+big_five1:bf_covid1:type_of_p = photovoltaic       -9.259                           
+                                                (9.333)                          
+                                                                                 
+big_five1:bf_covid1:type_of_p = wind               -15.297                          
+                                                (9.820)                          
+                                                                                 
+Observations                                    12,333              12,333       
+R2                                               0.788               0.777       
+Adjusted R2                                      0.787               0.776       
+Residual Std. Error                       62.186 (df = 12265) 63.810 (df = 12278)
+---------------------------------------------------------------------------------
+Notes:                                    ***Significant at the 1 percent level. 
+                                          **Significant at the 5 percent level.  
+                                          *Significant at the 10 percent level.   

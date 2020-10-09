@@ -75,6 +75,7 @@ library(kableExtra)
 library(plotly)
 
 library(summarytools)
+library(DataExplorer)
 ```
 
 ```{r functions, warning=F, message=F, include = F}
@@ -140,6 +141,13 @@ ggthemr('light',type = 'outer')
 
 ```{r, include=F}
 pp_data <- read.csv("./data/pp_data_real.csv")
+```
+
+
+```{r}
+# pp_data <- pp_data[,-c(1,2,3)]
+# plot_str(pp_data, type = "diagonal")
+
 ```
 
 #--------------------------------------------
@@ -250,69 +258,69 @@ pp_data_lingyun_capacity <- data.frame(percentage = c(52.31, 34.19, 58.5,13.74),
 
 
 ```{r}
-pp_data_unique %>% group_by(type_of_p, big_five) %>% summarise(sum(capacity))
-
-pp_data_my_capacity <- data.frame(percentage = 
-                                    (c(2326.29/(5251.42+2326.29), 0, 117.00/(756.73+117.00), 391.73/(872.38+391.73))*100) %>% 
-                                    round(2),
-                                  types = c('fossil.fuel' ,'hydro' ,'photovoltaic', 'wind')
-                      )
-
-pp_data_my_capacity <- rbind(pp_data_lingyun_capacity, pp_data_my_capacity, by = 'types')
-
-pp_data_my_capacity <- pp_data_my_capacity[-9,] 
-pp_data_my_capacity[,3] <- c(0,0,0,0,1,1,1,1) %>% as.factor()
-names(pp_data_my_capacity)[3] <- "if_in_shanxi"
-
-pp_data_my_capacity$percentage <- as.numeric(pp_data_my_capacity$percentage)
+# pp_data_unique %>% group_by(type_of_p, big_five) %>% summarise(sum(capacity))
+# 
+# pp_data_my_capacity <- data.frame(percentage = 
+#                                     (c(2326.29/(5251.42+2326.29), 0, 117.00/(756.73+117.00), 391.73/(872.38+391.73))*100) %>% 
+#                                     round(2),
+#                                   types = c('fossil.fuel' ,'hydro' ,'photovoltaic', 'wind')
+#                       )
+# 
+# pp_data_my_capacity <- rbind(pp_data_lingyun_capacity, pp_data_my_capacity, by = 'types')
+# 
+# pp_data_my_capacity <- pp_data_my_capacity[-9,] 
+# pp_data_my_capacity[,3] <- c(0,0,0,0,1,1,1,1) %>% as.factor()
+# names(pp_data_my_capacity)[3] <- "if_in_shanxi"
+# 
+# pp_data_my_capacity$percentage <- as.numeric(pp_data_my_capacity$percentage)
 ```
 
 
 ```{r}
-ggthemr('light',type = 'outer')
-
-pp_data_my_capacity_plot <- gpt(pp_data_my_capacity)+
-  geom_bar(aes(x = types, weight = percentage, group = if_in_shanxi, fill = if_in_shanxi), position = 'dodge') +
-  geom_text(aes(x = types, y = percentage, label = percentage, group = if_in_shanxi), 
-            position = position_dodge2(width = .82 , preserve = "single"),
-            vjust = -.3, size = 6) +
-  theme(text = element_text(size = 22),
-        plot.title = element_text(size = 25),
-        plot.subtitle = element_text(size = 19),
-        axis.text.x = element_text(angle = 0)) + 
-  labs(title  = "Big-five owned plant Capacity percentage",
-       subtitle = "Comparation of China mainland vs Shanxi",
-       x = "Type of Plant",
-       y = "Percentage of Capacity") +
-  scale_fill_brewer(palette = "Set3")
-pp_data_my_capacity_plot
-
-ggsave(filename = "../report/b5_capa_compare.png", plot = pp_data_my_capacity_plot, width = 9)
+# ggthemr('light',type = 'outer')
+# 
+# pp_data_my_capacity_plot <- gpt(pp_data_my_capacity)+
+#   geom_bar(aes(x = types, weight = percentage, group = if_in_shanxi, fill = if_in_shanxi), position = 'dodge') +
+#   geom_text(aes(x = types, y = percentage, label = percentage, group = if_in_shanxi), 
+#             position = position_dodge2(width = .82 , preserve = "single"),
+#             vjust = -.3, size = 6) +
+#   theme(text = element_text(size = 22),
+#         plot.title = element_text(size = 25),
+#         plot.subtitle = element_text(size = 19),
+#         axis.text.x = element_text(angle = 0)) + 
+#   labs(title  = "Big-five owned plant Capacity percentage",
+#        subtitle = "Comparation of China mainland vs Shanxi",
+#        x = "Type of Plant",
+#        y = "Percentage of Capacity") +
+#   scale_fill_brewer(palette = "Set3")
+# pp_data_my_capacity_plot
+# 
+# ggsave(filename = "../report/b5_capa_compare.png", plot = pp_data_my_capacity_plot, width = 9)
 
 ```
 
 
 ```{r}
 # 46.67% total market share of production ele.
-pp_data_unique$mean.comp.plant
-pp_data_unique %>% group_by(big_five, type_of_p) %>% summarise(sum(mean.comp.plant))
-(pp_data_unique %>% group_by(big_five, type_of_p) %>% summarise(sum(mean.comp.plant)))[1:4,2] %>% sum
-# pp_data_unique$mean.comp.plant[1:4] %>% sum
-(81.0127+1.4106+6.3053)/(156.4627+3.4488+7.0956+15.3616	+81.0127+1.4106+6.3053)
-
-last_p <- data.frame(if_in_shanxi = c("0","1"),
-                     percent = c("46.67%", "32.73%"))
-last_pp <- gpt(last_p)+aes(x = if_in_shanxi, y = percent, fill=if_in_shanxi) + 
-  geom_col()  + labs(title  = "Big-five owned plant generation percentage",
-       subtitle = "Comparation of China mainland vs Shanxi",
-       x = "Type of Plant",
-       y = "Percentage of Capacity") +
-    theme(text = element_text(size = 22),
-        plot.title = element_text(size = 25),
-        plot.subtitle = element_text(size = 19),
-        axis.text.x = element_text(angle = 0)) + 
-  scale_fill_brewer(palette = "Set3")
-ggsave(filename = "../report/b5_capa_compare2.png", plot = last_pp, width = 9)
+# pp_data_unique$mean.comp.plant
+# pp_data_unique %>% group_by(big_five, type_of_p) %>% summarise(sum(mean.comp.plant))
+# (pp_data_unique %>% group_by(big_five, type_of_p) %>% summarise(sum(mean.comp.plant)))[1:4,2] %>% sum
+# # pp_data_unique$mean.comp.plant[1:4] %>% sum
+# (81.0127+1.4106+6.3053)/(156.4627+3.4488+7.0956+15.3616	+81.0127+1.4106+6.3053)
+# 
+# last_p <- data.frame(if_in_shanxi = c("0","1"),
+#                      percent = c("46.67%", "32.73%"))
+# last_pp <- gpt(last_p)+aes(x = if_in_shanxi, y = percent, fill=if_in_shanxi) + 
+#   geom_col()  + labs(title  = "Big-five owned plant generation percentage",
+#        subtitle = "Comparation of China mainland vs Shanxi",
+#        x = "Type of Plant",
+#        y = "Percentage of Capacity") +
+#     theme(text = element_text(size = 22),
+#         plot.title = element_text(size = 25),
+#         plot.subtitle = element_text(size = 19),
+#         axis.text.x = element_text(angle = 0)) + 
+#   scale_fill_brewer(palette = "Set3")
+# ggsave(filename = "../report/b5_capa_compare2.png", plot = last_pp, width = 9)
 ```
 
 <!-- For this five cooperation, the total capacity of fossil-fuel power plants account for 52.31% of Chinese total fossil-fuel power plant capacity, respectively, hydro plants account for 34.19%, wind plants account for 58.5%, photovoltaic plants account for 13.74% (Lingyun Group, 2018). The market share of the five major cooperation accounts for 46.67% of total electricity production in 2018 (Xi, 2019). A previous study has shown the power plants of state-owned companies show lower unified (operational and environmental) efficiency than other companies (Zhang et al., 2014). While facing with pandemic, this study assumes the five major cooperation will be more sensitive to government orders and production behaviors are more flexible compares to those owned by private.  -->

@@ -581,7 +581,13 @@ pp_data <- pp_data[which(!is.na(pp_data$area3)),]
 #--------------------------------------------
 ### 5.8.9 real write2 adn description
 ```{r}
-# write.csv(pp_data, file = "./data/pp_data_real.csv")
+# pp_data <- read.csv("./data/pp_data_real.csv")
+pp_data$complete <- 100*pp_data$complete
+pp_data %>% str
+pp_data$city <- as.factor(pp_data$city)
+pp_data$big_five <- as.factor(pp_data$big_five)
+
+write.csv(pp_data, file = "./data/pp_data_real.csv")
 
 pp_data$plant %>% unique %>% length
 pp_data$parent_company %>% unique %>% length

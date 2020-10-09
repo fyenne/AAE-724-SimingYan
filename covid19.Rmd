@@ -432,23 +432,26 @@ library(lfe) #felm
 pp_data %>% names
 
 # pp_data_dummy <- fastDummies::dummy_cols(pp_data, select_columns = c("month", "year", "area3"))
-pp_data$yearmon <- as.yearmon(paste(pp_data$year, pp_data$month), "%y%m")
+# pp_data$yearmonth <- as.yearmon(paste(pp_data$year, pp_data$month), "%y%m")
 
-comp.mean = (pp_data %>% group_by(yearmon, area3) %>% summarise(mean(complete)) %>% ungroup())
-pp_data_test <- merge(comp.mean, pp_data, by = c("yearmon", "area3"))
-names(pp_data_test)[3] = "mean.com"
+comp.mean.area3 = (pp_data %>% group_by(yearmonth, area3) %>% summarise(mean(complete)) %>% ungroup())
+pp_data_test <- merge(comp.mean.area3, pp_data, by = c("yearmonth", "area3"))
+names(pp_data_test)[3] = "mean.com.area3"
 #--------------------------------------------
  
 pp_data_dummy <- select(pp_data_test, c(-generated_el, -time, -op_time, -area, -plant, -parent_company))
 
 pp_data_dummy$spr_festival <- "0"
 
+
 pp_data_dummy <- mutate(pp_data_dummy, spr_festival = ifelse(month == 1 & year != 18 | 
+                                                               month ==2 & year == 18, "1", "0"))
+pp_data <- mutate(pp_data, spr_festival = ifelse(month == 1 & year != 18 | 
                                                                month ==2 & year == 18, "1", "0"))
 # pp_data_dummy %>% filter(year == 18) %>% group_by(month) %>% slice(5)
 
 pp_data_dummy <- mutate(pp_data_dummy, bf_covid = ifelse(year != 20 | year == 20 & month == 1, "1", "0"))
-
+pp_data <- mutate(pp_data, bf_covid = ifelse(year != 20 | year == 20 & month == 1, "1", "0"))
 #--------------------------------------------
 ```
 
@@ -458,9 +461,10 @@ pp_data_dummy <- mutate(pp_data_dummy, bf_covid = ifelse(year != 20 | year == 20
 ```{r}
 pp_data_dummy <- select(pp_data_dummy, c(-month, -year))
 pp_data_dummy %>% names
+pp_data_dummy$complete = pp_data_dummy$complete*100
 # which(is.na(pp_data_dummy) == T)
-which(pp_data_dummy$area3 == "NA")
-pp_data_dummy <- pp_data_dummy[-which(pp_data_dummy$area3 == "NA"), ]
+# which(pp_data_dummy$area3 == "NA")
+# pp_data_dummy <- pp_data_dummy[-which(pp_data_dummy$area3 == "NA"), ]
 pp_data_dummy2 <- pp_data_dummy %>% filter(Hydro != 1)
 #--------------------------------------------
 
@@ -512,16 +516,28 @@ str(pp_data_dummy)
 # pp_data_dummy$big_five <- relevel(pp_data_dummy$big_five, ref = "1")
 # DF$b = relevel(DF$b, ref=3)
 # two different way to creat naive model.
-reg1 <- lm(complete ~ spr_festival*big_five + bf_covid*spr_festival+ big_five*bf_covid  +
-             area3
-           , data = pp_data_dummy) # +as.factor(yearmon)
 
-# v
-# felm(complete ~ big_five + spr_festival+bf_covid|area3, data = pp_data_dummy) %>% summary()
+
+#--------------------------------------------
+
+# reg1 <- lm(complete ~ spr_festival*big_five + bf_covid*spr_festival+ big_five*bf_covid  +
+#              area3
+#            , data = pp_data_dummy) # +as.factor(yearmon)
+#--------------------------------------------
+pp_data$big_five <- as.factor(pp_data$big_five)
+pp_data$city <- as.factor(pp_data$city)
+
+pp_data %>% str
+
+
+
+names(pp_data_dummy)
+reg1 <- felm(complete ~ capacity + big_five + city |yearmonth + area3 , data = pp_data)
 # 
-
-coef1 <- summary(reg1)$coef
+reg2 <- felm(complete ~ big_five:bf_covid|yearmonth + plant , data = pp_data)
+# coef1 <- summary(reg1)$coef
 summary(reg1)$coef
+summary(reg2)
 
 mod_stargazer("reg1_naive.text", reg1, type = "text")
 ```
@@ -529,18 +545,23 @@ mod_stargazer("reg1_naive.text", reg1, type = "text")
 
 ```{r}
 #--------------------------------------------
+library(gt)
+library(DataExplorer)
+# plot_str(pp_data, type = "radial")
+# plot_str(iris)
 # two different way to creat naive model with interaction terms.
 
-reg2 <- lm(complete ~ big_five + big_five:spr_festival + big_five:bf_covid + as.factor(yearmon) + area3, data = pp_data_dummy)
-(reg2 %>% summary)$coef %>% data.frame() %>% view
-
-reg_covid <- felm(complete ~ big_five*spr_festival + big_five*bf_covid + 
-                    big_five*bf_covid*Hydro + big_five*bf_covid*wind + 
-                    big_five*bf_covid*`Fossil-fuel` + big_five*bf_covid*photovoltaic|area3, data = pp_data_dummy)
+# reg2 <- lm(complete ~ big_five + big_five:spr_festival + big_five:bf_covid + as.factor(yearmonth) + area3, data = pp_data)
+# (reg2 %>% summary)$coef %>% data.frame() %>% view
+pp_data %>% str
+reg_covid <- felm(complete ~ capacity + city + 
+                    big_five*capacity + 
+                    big_five*spr_festival + big_five*bf_covid + 
+                    big_five*bf_covid*type_of_p|area3 + yearmonth, data = pp_data)
             # omit=c("big_five0:spr_festival1","big_five1:bf_covid1"))
 #--------------------------------------------
-
-mod_stargazer("reg_covid.text", reg_covid, type = "text")
+reg_covid %>% stg
+mod_stargazer("reg_covid.text", reg_covid, reg1, type = "text", align = T, style = "aer")
 
 ```
 
@@ -549,7 +570,7 @@ mod_stargazer("reg_covid.text", reg_covid, type = "text")
 ```{r}
 reg_covid_month <- felm(complete ~ big_five + big_five + 
                     big_five*Hydro + big_five*wind + 
-                    big_five*`Fossil-fuel` + big_five*photovoltaic|area3 + yearmon, data = pp_data_dummy)
+                    big_five*`Fossil.fuel` + big_five*photovoltaic|area3 + yearmonth, data = pp_data)
 reg_covid_month %>% stg
 ```
 
