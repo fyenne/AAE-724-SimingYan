@@ -79,7 +79,7 @@ library(RColorBrewer)
 library(readxl)
 library(openxlsx)
 library(zoo)
-
+library(ggthemr)
 
 ggthemr('light',type = 'outer')
 ```
@@ -413,7 +413,7 @@ dfp$year <- as.factor(dfp$year)
 ```{r}
 
 ggthemr('light',type = 'outer')
-p  <- ggplot(dfp) +
+p  <- ggplot(dfp2) +
   geom_line(aes(x = month, 
                 y = `sum(complete)`, 
                 group = year,

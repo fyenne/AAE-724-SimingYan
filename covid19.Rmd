@@ -534,12 +534,15 @@ pp_data %>% str
 names(pp_data_dummy)
 reg1 <- felm(complete ~ capacity + big_five + city |yearmonth + area3 , data = pp_data)
 # 
-reg2 <- felm(complete ~ big_five:bf_covid|yearmonth + plant , data = pp_data)
+reg2 <- felm(complete ~ big_five*bf_covid*spr_festival|area3 + month, data = pp_data)
 # coef1 <- summary(reg1)$coef
 summary(reg1)$coef
 summary(reg2)
 
+reg9 <- felm(complete ~ bf_covid|plant, pp_data)
+reg9
 mod_stargazer("reg1_naive.text", reg1, type = "text")
+mod_stargazer("reg2_naive.text", reg2, type = "text")
 ```
 
 
@@ -555,7 +558,7 @@ library(DataExplorer)
 # (reg2 %>% summary)$coef %>% data.frame() %>% view
 pp_data %>% str
 reg_covid <- felm(complete ~ capacity + city + 
-                    big_five*capacity + 
+                    big_five + 
                     big_five*spr_festival + big_five*bf_covid + 
                     big_five*bf_covid*type_of_p|area3 + yearmonth, data = pp_data)
             # omit=c("big_five0:spr_festival1","big_five1:bf_covid1"))
@@ -592,7 +595,7 @@ reg_covid_month %>% stg
 library(caret)
 library(ranger)
 library(fastDummies)
-library(neuralnet)
+library(neuralnet)#library(neuralnet)
 library(plm)
 library(gbm)
 library(gamlr)
@@ -606,12 +609,17 @@ myControl <- trainControl(
 )
 ```
 
+#--------------------------------------------
 
-
-
-
-
+### 5.1 monthly mean prediction
 ```{r}
+pp_data_before <- pp_data %>% filter(year != 20)
+pp_data_dummy2 <- pp_data %>% group_by(yearmonth) %>% 
+  summarise(mean.com.month = mean(complete))
+
+pp_data_test
+```
+```{r monthly}
 samplesize = 0.75 * nrow(pp_data_before)
 set.seed(123)
 index = sample(nrow(pp_data_before), size = samplesize)
@@ -620,13 +628,33 @@ index = sample(nrow(pp_data_before), size = samplesize)
 pp_train = pp_data_before[index,]
 pp_test = pp_data_before[-index,]
 ```
+#--------------------------------------------
+
+### 5.2 area3 mean prediction 
+
+```{r area3}
+pp_data_test %>% names
+pp_data_test$yearmon %>% max
+
+#--------------------------------------------
+
+pp_data_before <- pp_data_test %>% filter(year != 20)
+pp_data_after <- pp_data_test %>% filter(year == 20)
+samplesize = 0.75 * nrow(pp_data_before)
+set.seed(123)
+index = sample(nrow(pp_data_before), size = samplesize)
+
+# creating training and test set
+pp_train = pp_data_test[index,]
+pp_test = pp_data_test[-index,]
+```
 
 ## Linear Regression
 
 ```{r message=FALSE, warning=FALSE}
 # From previous step
 # which(is.na(pp_train))
-# names(pp_train)
+names(pp_train)
 
 tuneGrid <- data.frame(
     alpha = seq(0, 1, length = 5),
@@ -635,17 +663,18 @@ tuneGrid <- data.frame(
 
 # Fit random forest: model
 lr_model <- train(
-  mean.com ~ . ,
+  mean.com.area3 ~ yearmon + area3 + big_five+ type_of_p+city,
   data = pp_train, 
-  method = "lm"
-  # tuneGrid = tuneGrid,
-  # trControl = myControl
+  method = "glmnet",
+  tuneGrid = tuneGrid,
+  trControl = myControl
 )
-
+# seq(0, 5, length = 15)
 # Print model to console
-# tuneGrid
-# lr_model
-# plot(lr_model)
+tuneGrid
+# lr_model$bestTune
+
+plot(lr_model)
 ```
 
 ```{r}
@@ -678,11 +707,29 @@ LR_RMSE
 ```
 
 
+```{r, warning = F}
+pred_mean.com2 <- predict(lr_model, newdata = pp_data_after)
+pp_test2 <- cbind(pp_data_after, pred_mean.com2)
 
+dfp_plus <- pp_test2 %>% group_by(month) %>% summarise(sum(pred_mean.com2)) 
+dfp_plus$year = "20pre"
+# pp_test2 %>% group_by(month) %>% summarise(sum(mean.com.area3)) %>% plot
 
+names(dfp_plus)[2] = "sum(complete)"
 
-
-```{r}
-
+dfp2 <- rbind(dfp,dfp_plus)
 ```
+```{r, warning = F}
+p12 <- ggplot(pp_test2, aes(x = month, y=)) + 
+  geom_point(alpha=0.8, col ="grey") + 
+  # scale_x_continuous(limits=c(0,100)) +
+  # scale_y_continuous(limits=c(0,100)) +
+  # geom_abline(intercept=0,slope=1) +
+  # geom_smooth(se=0,method = "lm") +
+  # coord_fixed(1) +
+  ggtitle("LR")
+p12
 
+LR_RMSE <- sqrt(sum((pp_test$pred_mean.com-pp_test$mean.com)^2)/nrow(pp_test))
+LR_RMSE
+```
