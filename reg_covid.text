@@ -1,57 +1,39 @@
 
-===============================================
-                                                         complete               
+================================================================================
+                               Electricity Generation
 --------------------------------------------------------------------------------
-suburban : during_covid 			  -25.847**               
-                                                         	   	   (8.993)                
+suburban : during_covid 			                        -25.847** (8.993)                
                                                             
-suburban : bf_covid			 	    -8.013                
-                                                         		  (16.422)               
+suburban : bf_covid			 	                            -8.013    (16.422)               
                                                                                 
-bf_covid : non_big_five : hydro                      	 -43.592**               
-                                                        	 	  (15.538)               
+bf_covid : non_big_five : hydro                    	-43.592** (15.538)               
                                                                             
-during_covid : non_big_five : photovoltaic              	 -106.080***              
-                                                        		  (7.216)                
+during_covid : non_big_five : photovoltaic          -106.080*** (7.216)                
                                                                                 
-bf_covid : non_big_five : photovoltaic             	 -139.140***              
-                                                         		  (8.734)                
+bf_covid : non_big_five : photovoltaic              -139.140*** (8.734)                
                                                                                 
-during_covid : big_five1 : photovoltaic              	 -99.432***              
-                                                        		  (2.506)                
+during_covid : big_five1 : photovoltaic             -99.432*** (2.506)                
                                                                                 
-bf_covid : big_five1 :  photovoltaic              	 -130.880***              
-                                                        		  (11.928)               
+bf_covid : big_five1 :  photovoltaic                -130.880*** (11.928)               
                                                                                 
-during_covid : non_big_five : wind                    	 -102.110***              
-                                                        		  (7.642)                
+during_covid : non_big_five : wind                  -102.110*** (7.642)                
                                                                                 
-bf_covid : non_big_five : wind                     	 -127.870***              
-                                                        		  (6.073)                
+bf_covid : non_big_five : wind                     	-127.870*** (6.073)                
                                                                                 
-during_covid : big_five1 : wind                      	 -98.176***              
-                                                        		  (9.158)                
+during_covid : big_five1 : wind                     -98.176*** (9.158)                
                                                                                 
-bf_covid : big_five1 :  wind                     		 -127.870***              
-                                                       		  (9.043)        
+bf_covid : big_five1 :  wind                     		-127.870*** (9.043)        
 
-during_covid : big_five1 : fossil-fuel                	  40.853**               
-                                                        		  (10.947)               
+during_covid : big_five1 : fossil-fuel                40.853** (10.947)               
                                                                                 
-bf_covid : big_five1 : fossil-fuel                		  89.226**               
-                                                        		  (28.972)                
+bf_covid : big_five1 : fossil-fuel                		89.226** (28.972)                
                                                                                 
-during_covid : non_big_five : fossil-fuel                	  -17.183                
-                                                         		  (10.489)               
+during_covid : non_big_five : fossil-fuel            -17.183  (10.489)               
                                                                                 
-bf_covid : non_big_five : fossil-fuel               	  -15.709                
-                                                       		  (11.145)                       
+bf_covid : non_big_five : fossil-fuel                -15.709  (11.145)                       
                                                                                 
 Observations                                              	  12,333                
 R2                                                       		   0.314                 
 Adjusted R2                                              	   0.312                 
 Residual Std. Error                                		111.760 (df = 12292)         
 --------------------------------------------------------------------------------
-Notes :                               ***Significant at the 1 percent level.
-                                          **Significant at the 5 percent level. 
-                                          *Significant at the 10 percent level.  
