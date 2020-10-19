@@ -411,9 +411,9 @@ dfp$year <- as.factor(dfp$year)
 
 
 ```{r}
-
+# dfp 2 include ml data stimulation.
 ggthemr('light',type = 'outer')
-p  <- ggplot(dfp2) +
+p  <- ggplot(dfp) +
   geom_line(aes(x = month, 
                 y = `sum(complete)`, 
                 group = year,

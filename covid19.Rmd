@@ -562,30 +562,31 @@ library(DataExplorer)
 # (reg2 %>% summary)$coef %>% data.frame() %>% view
 
 #--------------------------------------------
+pp_data$bf_covid <- as.factor(pp_data$bf_covid)
 pp_data %>% str
 reg_covid <- felm(complete ~ 
-                    city + 
+                    # city + 
                     # big_five +
                     # bf_covid +
                     city:bf_covid + 
                     big_five:bf_covid:type_of_p|
                     area3 + year + month|
                     0|
-                    plant + area3 + year, data = pp_data)
+                    plant + area3 + year + month, data = pp_data)
             # omit=c("big_five0:spr_festival1","big_five1:bf_covid1"))
 #--------------------------------------------
 reg_covid %>% stg
-mod_stargazer("reg_covid.text", reg_covid, reg1, type = "text", align = T, style = "aer")
+mod_stargazer("../report/reg_covid.text", reg_covid, type = "text", align = T, style = "aer")
 
 ```
 
 
 #### 4.1 monthly fixed effect
 ```{r}
-reg_covid_month <- felm(complete ~ big_five + big_five + 
-                    big_five*Hydro + big_five*wind + 
-                    big_five*`Fossil.fuel` + big_five*photovoltaic|area3 + yearmonth, data = pp_data)
-reg_covid_month %>% stg
+# reg_covid_month <- felm(complete ~ big_five + big_five + 
+#                     big_five*Hydro + big_five*wind + 
+#                     big_five*`Fossil.fuel` + big_five*photovoltaic|area3 + yearmonth, data = pp_data)
+# reg_covid_month %>% stg
 ```
 
 #--------------------------------------------
@@ -724,7 +725,7 @@ n
 #--------------
 
 nn <- neuralnet(f, 
-          data = m, hidden = c(235), algorithm = "backprop", linear.output = T, learningrate = 0.00001)
+          data = m, hidden = c(235, 12), algorithm = "backprop", linear.output = T, learningrate = 0.00001)
 
 
 # c((nn$data %>% names), pp_test %>% names)
@@ -753,6 +754,34 @@ MSE.nn <- sum((test.r - pr.nn_)^2)/nrow(test_)
 
 
 ```
+
+
+#------------------------------------------
+
+### 5.22 eliminate diffs among bf_af_covid
+
+
+```{r}
+setdiff(pp_data_before$plant, pp_data_after$plant)
+
+diffs <- pp_data_after$plant[which(!pp_data_after$plant %in% pp_data_before$plant)] %>% unique
+
+
+pp_data_after <- pp_data_after[!pp_data_after$plant %in% diffs,]
+
+pp_data_before3 <- pp_data_before[pp_data_after$plant %in% pp_data_before$plant,]
+#------ 好像没什么必要.直接tm用前面的电厂名字不就行了么
+
+```
+
+### 5.23 or directly use the plants in bf_covid time.
+
+```{r}
+pp_data_after2 <- pp_data_after[,c("year", "month")]
+```
+
+
+
 
 ## Linear Regression
 

@@ -84,7 +84,7 @@ kbt <- function(...){
                                full_width = F,
                                position = "center",
                                row_label_position = "c") %>%
-   row_spec(0, bold = T, color = "white", background = "#43B563CF")
+   row_spec(0, bold = T )
 }
 
 gpt <- function(...){
@@ -139,7 +139,7 @@ ggthemr('light',type = 'outer')
 ```
 
 ```{r, include=F}
-pp_data <- read.csv("./data/pp_data_real.csv")
+pp_data <- read.csv("./pp_data_real.csv")
 ```
 
 #--------------------------------------------
@@ -176,9 +176,10 @@ our_summary1 <-
 # unique(paste0(pp_data$big_five, pp_data$plant)) %>% length
 
 st1 <- summary_table(group_by(pp_data, type_of_p), our_summary1) %>% kbt %>%
-  add_header_above(header = c("Observations Level Summary over Type of Plants" = 5), bold = T, background = "#FAF33230" , font_size = 18)
+  add_header_above(header = c("Observations Level Summary over Type of Plants" = 5), bold = T, font_size = 18)
+st1  
 #--------------------------------------------
-save_kable(st1, file = "../report/table_1.png")
+save_kable(st1, file = "../report/table_1.png", zoom = 4, keep_tex = T)
 ```
 
 
@@ -215,11 +216,11 @@ our_summary2 <-
 
 
 st2 <- summary_table(group_by(pp_data_unique, type_of_p), our_summary2) %>%
-  kbt(format = "pip") %>%
+  kbt() %>%
   add_header_above(header = c("Plants Level Summary over Type of Plants" = 5), 
-                   bold = T,  background = "#FAF33230" , font_size = 18)
+                   bold = T, font_size = 18)
 
-save_kable(st2, file = "../report/table_2.png", keep_tex = T, density = 600)
+save_kable(st2, file = "../report/table_2.png", keep_tex = T, zoom = 4)
 #--------------------------------------------
 # city
 
@@ -245,9 +246,10 @@ our_summary3 <-
             "Owned"     = ~ sum(big_five))
 )
 
-summary_table(group_by(pp_data_unique, city), our_summary3) %>%
+st3 <- summary_table(group_by(pp_data_unique, city), our_summary3) %>%
   kbt %>%
-  add_header_above(header = c("Plants Level Summary over City Type" = 3), bold = T, background = "#FAF33230" , font_size = 18)
+  add_header_above(header = c("Plants Level Summary over City Type" = 3), bold = T , font_size = 18)
+save_kable(st3, file = "../report/table_3.png", keep_tex = T, zoom = 4)
 #--------------------------------------------
 
 # area3
@@ -271,8 +273,9 @@ our_summary4 <-
             "Owned"     = ~ sum(big_five))
 )
 
-summary_table(group_by(pp_data_unique, area3), our_summary4)  %>%  kbt %>%
-  add_header_above(header = c("Plants Level Summary over Area" = 12), bold = T, background = "#FAF33230" , font_size = 18)
+st4 <- summary_table(group_by(pp_data_unique, area3), our_summary4)  %>%  kbt %>%
+  add_header_above(header = c("Plants Level Summary over Area" = 12), bold = T,  font_size = 18)
+save_kable(st4, file = "../report/table_4.png", keep_tex = T, zoom = 4)
 ```
 
 #--------------------------------------------
@@ -289,8 +292,8 @@ st_options(plain.ascii = FALSE)
 
 ```{r, echo = F}
 # print(dfSummary(tobacco, graph.magnif = 0.75))
-# pp_data[, -c(1,2,3,6,7,8,9,10,11,12,13, 14, 20, 21)] %>% str
-mcor <- cor(pp_data[, -c(1,2,3,6,7,8,9,10,11,12,13, 14,20, 21)])
+pp_data[, -c(1,2,3,6,7,8,9,10,11,12,13, 14, 20, 21)] %>% str
+mcor <- cor(pp_data[, -c(1,2,3,6,7,8,9,10,11,12,13, 14,19,20, 21)])
 upper <- mcor
 
 upper[upper.tri(mcor)] <- "" 
@@ -299,11 +302,11 @@ upper <- data.frame(upper)
 library(xtable)
 xtable <- xtable(upper) %>% data.frame()
 
-xtable(upper) %>% kbt %>%
-  add_header_above(header = c("Variable correlations" = 9), bold = T, background = "#FAF33230" , font_size = 18)
+st5 <- xtable(upper) %>% kbt %>%
+  add_header_above(header = c("Variable correlations" = 9), bold = T, font_size = 18)
 
 
-
+save_kable(st5, file = "../report/table_5.png", keep_tex = T, zoom = 4)
 # print(xtable(upper), type = "html", method = "render")
 
 # corstars(mtcars[,1:7], result="html")

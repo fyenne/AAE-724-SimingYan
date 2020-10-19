@@ -85,7 +85,7 @@ kbt <- function(...){
                                full_width = F,
                                position = "center",
                                row_label_position = "c") %>%
-   row_spec(0, bold = T, color = "white", background = "#43B563CF")
+   row_spec(0, bold = T)
 }
 
 gpt <- function(...){
