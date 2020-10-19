@@ -1,57 +1,72 @@
 
-===============================================
+================================================================================
                                                          complete               
 --------------------------------------------------------------------------------
-suburban : during_covid 			  -25.847**               
-                                                         	   	   (8.993)                
-                                                            
-suburban : bf_covid			 	    -8.013                
-                                                         		  (16.422)               
+city1                                                    25.847**               
+                                                         (9.021)                
                                                                                 
-bf_covid : non_big_five : hydro                      	 -43.592**               
-                                                        	 	  (15.538)               
-                                                                            
-during_covid : non_big_five : photovoltaic              	 -106.080***              
-                                                        		  (7.216)                
+big_five1                                               -99.432***              
+                                                         (1.742)                
                                                                                 
-bf_covid : non_big_five : photovoltaic             	 -139.140***              
-                                                         		  (8.734)                
+bf_covid1                                               -25.759***              
+                                                         (4.635)                
                                                                                 
-during_covid : big_five1 : photovoltaic              	 -99.432***              
-                                                        		  (2.506)                
+city1:bf_covid1                                          -17.833                
+                                                         (11.748)               
                                                                                 
-bf_covid : big_five1 :  photovoltaic              	 -130.880***              
-                                                        		  (11.928)               
+big_five0:bf_covid0:type_of_pfossil-fuel                 -17.183                
+                                                         (8.459)                
                                                                                 
-during_covid : non_big_five : wind                    	 -102.110***              
-                                                        		  (7.642)                
+big_five1:bf_covid0:type_of_pfossil-fuel                140.280***              
+                                                         (11.313)               
                                                                                 
-bf_covid : non_big_five : wind                     	 -127.870***              
-                                                        		  (6.073)                
+big_five0:bf_covid1:type_of_pfossil-fuel                  27.883                
+                                                         (22.008)               
                                                                                 
-during_covid : big_five1 : wind                      	 -98.176***              
-                                                        		  (9.158)                
+big_five1:bf_covid1:type_of_pfossil-fuel                232.250***              
+                                                         (42.695)               
                                                                                 
-bf_covid : big_five1 :  wind                     		 -127.870***              
-                                                       		  (9.043)        
-
-during_covid : big_five1 : fossil-fuel                	  40.853**               
-                                                        		  (10.947)               
+big_five0:bf_covid0:type_of_phydro                                              
+                                                         (0.000)                
                                                                                 
-bf_covid : big_five1 : fossil-fuel                		  89.226**               
-                                                        		  (28.972)                
+big_five1:bf_covid0:type_of_phydro                                              
+                                                         (0.000)                
                                                                                 
-during_covid : non_big_five : fossil-fuel                	  -17.183                
-                                                         		  (10.489)               
+big_five0:bf_covid1:type_of_phydro                                              
+                                                         (0.000)                
                                                                                 
-bf_covid : non_big_five : fossil-fuel               	  -15.709                
-                                                       		  (11.145)                       
+big_five1:bf_covid1:type_of_phydro                                              
+                                                         (0.000)                
                                                                                 
-Observations                                              	  12,333                
-R2                                                       		   0.314                 
-Adjusted R2                                              	   0.312                 
-Residual Std. Error                                		111.760 (df = 12292)         
+big_five0:bf_covid0:type_of_pphotovoltaic              -106.080***              
+                                                         (6.999)                
+                                                                                
+big_five1:bf_covid0:type_of_pphotovoltaic                                       
+                                                         (0.000)                
+                                                                                
+big_five0:bf_covid1:type_of_pphotovoltaic               -95.544***              
+                                                         (7.201)                
+                                                                                
+big_five1:bf_covid1:type_of_pphotovoltaic                12.146**               
+                                                         (3.180)                
+                                                                                
+big_five0:bf_covid0:type_of_pwind                      -102.110***              
+                                                         (7.605)                
+                                                                                
+big_five1:bf_covid0:type_of_pwind                         1.255                 
+                                                         (8.228)                
+                                                                                
+big_five0:bf_covid1:type_of_pwind                       -84.275***              
+                                                         (8.385)                
+                                                                                
+big_five1:bf_covid1:type_of_pwind                        15.154*                
+                                                         (6.429)                
+                                                                                
+Observations                                              12,333                
+R2                                                        0.314                 
+Adjusted R2                                               0.312                 
+Residual Std. Error                                111.760 (df = 12292)         
 --------------------------------------------------------------------------------
-Notes :                               ***Significant at the 1 percent level.
+Notes:                                    ***Significant at the 1 percent level.
                                           **Significant at the 5 percent level. 
                                           *Significant at the 10 percent level.  
