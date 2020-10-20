@@ -676,3 +676,9 @@ ggsave(filename = "../report/el-gen-type_of_p5.png", plot = p5, width = 12)
 ggsave(filename = "../report/el-gen-type_of_p6.png", plot = p6, width = 12)
 
 ```
+
+
+```{r}
+
+```
+

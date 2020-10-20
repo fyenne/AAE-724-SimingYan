@@ -551,28 +551,37 @@ mod_stargazer("reg2_naive.text", reg2, type = "text")
 
 
 ```{r}
+length(pp_data$plant %>% unique)
 #--------------------------------------------
 library(gt)
 library(DataExplorer)
 # plot_str(pp_data, type = "radial")
 # plot_str(iris)
 # two different way to creat naive model with interaction terms.
+reg1 <- felm(complete ~ capacity + big_five + city + bf_covid|year + month + area3, 
+             data = pp_data)
+(reg1 %>% summary)$coef
 
-# reg2 <- lm(complete ~ big_five + big_five:spr_festival + big_five:bf_covid + as.factor(yearmonth) + area3, data = pp_data)
-# (reg2 %>% summary)$coef %>% data.frame() %>% view
+reg2 <- felm(complete ~ 
+               capacity+
+               bf_covid:type_of_p + 
+               big_five:bf_covid:type_of_p|
+               area3 + year + month|0|
+               plant + area3 + year, data = pp_data)
+(reg2 %>% summary)$coef %>% data.frame() %>% view
 
 #--------------------------------------------
 pp_data$bf_covid <- as.factor(pp_data$bf_covid)
 pp_data %>% str
 reg_covid <- felm(complete ~ 
-                    # city + 
-                    # big_five +
-                    # bf_covid +
+                    city +
+                    big_five +
+                    bf_covid +
                     city:bf_covid + 
                     big_five:bf_covid:type_of_p|
                     area3 + year + month|
                     0|
-                    plant + area3 + year + month, data = pp_data)
+                    plant + area3 + year, data = pp_data)
             # omit=c("big_five0:spr_festival1","big_five1:bf_covid1"))
 #--------------------------------------------
 reg_covid %>% stg
