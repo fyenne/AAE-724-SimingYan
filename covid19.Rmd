@@ -569,11 +569,13 @@ reg1 <- felm(complete ~ capacity + big_five + city + bf_covid|year + month + are
 reg2 <- felm(complete ~ 
                capacity +
                city +
+               # big_five+
                bf_covid +
                bf_covid:type_of_p|
                area3 + year + month|0|
-               plant + area3, data = pp_data)
-(reg2 %>% summary)$coef %>% data.frame() %>% view
+               year + area3 + plant, 
+             data = pp_data)
+(reg2 %>% summary)
 
 mod_stargazer("../report/reg_1.text", reg1, type = "text", align = T, style = "aer")
 mod_stargazer("../report/reg_2.text", reg2, type = "text", align = T, style = "aer")
@@ -583,14 +585,15 @@ pp_data %>% str
 reg_covid <- felm(complete ~ 
                     capacity +
                     city +
-                    city:bf_covid + 
+                    big_five +
+                    bf_covid + 
                     big_five:bf_covid:type_of_p|
                     area3 + year + month|
                     0|
-                    plant + area3 + year, data = pp_data)
+                    plant + area3 + year , data = pp_data)
             # omit=c("big_five0:spr_festival1","big_five1:bf_covid1"))
 #--------------------------------------------
-reg_covid %>% stg
+reg_covid %>% summary
 mod_stargazer("../report/reg_3.text", reg_covid, type = "text", align = T, style = "aer")
 
 ```
@@ -644,22 +647,18 @@ myControl <- trainControl(
 ### 5.1 monthly mean prediction
 ```{r}
 pp_data_before <- pp_data %>% filter(year != 20)
-pp_data_dummy2 <- pp_data %>% group_by(yearmonth) %>% 
-  summarise(mean.com.month = mean(complete))
-
-pp_data_test
 ```
 
 
-```{r monthly}
-samplesize = 0.75 * nrow(pp_data_before)
-set.seed(123)
-index = sample(nrow(pp_data_before), size = samplesize)
+<!-- ```{r monthly} -->
+<!-- samplesize = 0.75 * nrow(pp_data_before) -->
+<!-- set.seed(123) -->
+<!-- index = sample(nrow(pp_data_before), size = samplesize) -->
 
-# creating training and test set
-pp_train = pp_data_before[index,]
-pp_test = pp_data_before[-index,]
-```
+<!-- # creating training and test set -->
+<!-- pp_train = pp_data_before[index,] -->
+<!-- pp_test = pp_data_before[-index,] -->
+<!-- ``` -->
 #--------------------------------------------
 
 ### 5.2 area3 mean prediction 
@@ -719,10 +718,10 @@ pp_data_before2 <- cbind(scaled, pp_data_before2)
 pp_data_before2 <- pp_data_before2[,-c(4, 6,7,8,9,12)]
 
 
-m <- model.matrix( 
-  ~ .-1, 
-  data = pp_data_before2 
-)
+# m <- model.matrix( 
+#   ~ .-1, 
+#   data = pp_data_before2 
+# )
 
 # 
 # pp_data_before23 <- pp_data_before23[,1:10]
@@ -780,19 +779,104 @@ MSE.nn <- sum((test.r - pr.nn_)^2)/nrow(test_)
 setdiff(pp_data_before$plant, pp_data_after$plant)
 
 diffs <- pp_data_after$plant[which(!pp_data_after$plant %in% pp_data_before$plant)] %>% unique
-
+diffs
 
 pp_data_after <- pp_data_after[!pp_data_after$plant %in% diffs,]
 
 pp_data_before3 <- pp_data_before[pp_data_after$plant %in% pp_data_before$plant,]
 #------ 好像没什么必要.直接tm用前面的电厂名字不就行了么
 
+
+# creating training and test set
+
+
+
+max = apply(pp_data_before3[,c(7,8)], 2, max)
+min = apply(pp_data_before3[,c(7,8)], 2, min)
+pp_data_before3 %>% names
+scaled = as.data.frame(scale(pp_data_before3[,c(7,8)], center = min, scale = max - min))
+
+pp_data_before3 <- pp_data_before3[,-c(1:10, 14,22,23, 24)]
+# pp_data_before3 <- pp_data_before3[,-c(13,14)]
+pp_data_before3 <- cbind(scaled, pp_data_before3)
+names(pp_data_before3)[11:12] = c("fossilfuel", "bigfive")
+
 ```
+#------------------------------------------
+```{r}
+pp_data_before3$parent_company <- pp_data_before3$parent_company %>% py(sep = "", dic = pydic(method = 'toneless', dic = "pinyin2"))
+pp_data_before3$area <- pp_data_before3$area %>% py(sep = "", dic = pydic(method = 'toneless', dic = "pinyin2"))
+
+```
+#------------------------------------------
+```{r}
+pp_data_bf_dummy <- fastDummies::dummy_cols(pp_data_before3, select_columns = c("month","year","parent_company", "area", "plant_1" ))
+
+pp_data_bf_dummy <- pp_data_bf_dummy[,!names(pp_data_bf_dummy) %in% c("month","year","parent_company", "area", "plant_1" )]
+
+
+```
+
+
+#------------------------------------------
+# real prediction
+
+```{r}
+samplesize = 0.75 * nrow(pp_data_bf_dummy)
+set.seed(123)
+index = sample(nrow(pp_data_bf_dummy), size = samplesize)
+pp_train = pp_data_bf_dummy[index,]
+pp_test = pp_data_bf_dummy[-index,]
+#------------------------------------------
+```
+
+```{r}
+names(pp_train) <- make.names(names(pp_train))
+n <- names(pp_train %>% data.frame)
+view(n)
+f <- as.formula(paste("complete ~", paste(n[!n %in% c("complete")], collapse = " + ")))
+
+# which(str(pp_train) == factor)
+#--------------
+
+
+nn <- neuralnet(f, 
+          data = pp_train, hidden = c(5), algorithm = "backprop", linear.output = T, learningrate = 0.0001)
+
+# pp_test[,-2]
+
+
+# c((nn$data %>% names), pp_test %>% names)
+predict_testNN = compute(nn, pp_test[,-2])
+predict_testNN = (predict_testNN$net.result * (max(pp_data_before$complete) - min(pp_data_before$complete))) + min(pp_data_before$complete)
+# plot(nn)
+# pp_test <- pp_test[ , names(pp_test) %in% n]
+```
+```{r}
+plot(pp_test$complete, predict_testNN, col='blue', pch=16, ylab = "predicted rating NN", xlab = "real rating")
+
+abline(0,1)
+
+# Calculate Root Mean Square Error (RMSE)
+RMSE.NN = (sum((pp_test$complete - predict_testNN)^2) / nrow(pp_test)) ^ 0.5
+RMSE.NN
+
+
+
+pr.nn <- compute(nn,test_[,1:13])
+pr.nn_ <- pr.nn$net.result*(max(data$medv)-min(data$medv))+min(data$medv)
+test.r <- (test_$medv)*(max(data$medv)-min(data$medv))+min(data$medv)
+MSE.nn <- sum((test.r - pr.nn_)^2)/nrow(test_)
+
+
+
+```
+
 
 ### 5.23 or directly use the plants in bf_covid time.
 
 ```{r}
-pp_data_after2 <- pp_data_after[,c("year", "month")]
+pp_data_after2 <- pp_data_before[,c("year", "month")]
 ```
 
 
@@ -813,18 +897,25 @@ tuneGrid <- data.frame(
 # Fit random forest: model
 lr_model <- train(
   complete ~ .,
-  data = m, 
+  data = pp_train, 
   method = "nnet",
-  tuneGrid = tuneGrid,
-  trControl = myControl
-)
-# seq(0, 5, length = 15)
-# Print model to console
-tuneGrid
-# lr_model$bestTune
+  preProcess = "range",
+  tuneLength = 2,
+  trace = FALSE,
+  maxit = 100)
+
+ 
 
 plot(lr_model)
 
+# TrainData <- iris[,1:4]
+# TrainClasses <- iris[,5]
+# nnetFit <- train(TrainData, TrainClasses,
+#                  method = "nnet",
+#                  preProcess = "range", 
+#                  tuneLength = 2,
+#                  trace = FALSE,
+#                  maxit = 100)
 
 
 model <- train(y ~ x1+x2, dat, method='nnet', linout=TRUE, trace = FALSE)
