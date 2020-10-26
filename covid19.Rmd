@@ -649,7 +649,8 @@ myControl <- trainControl(
 
 ### 5.1 monthly mean prediction
 ```{r}
-pp_data_before <- pp_data %>% filter(year != 20)
+# pp_data_before <- pp_data %>% filter(year != 20)
+# pp_data_after <- pp_data %>% filter(year == 20)
 ```
 
 
@@ -668,15 +669,12 @@ pp_data_before <- pp_data %>% filter(year != 20)
 
 ```{r area3}
 # pp_data_test %>% names
-# pp_data_test$yearmon %>% max
-
-#--------------------------------------------
-
+# pp_data_before <- pp_data_test %>% filter(year != 20)
 pp_data_before <- pp_data_test %>% filter(year != 20)
 pp_data_after <- pp_data_test %>% filter(year == 20)
-samplesize = 0.75 * nrow(pp_data_before)
-set.seed(123)
-index = sample(nrow(pp_data_before), size = samplesize)
+# samplesize = 0.75 * nrow(pp_data_before)
+# set.seed(123)
+# index = sample(nrow(pp_data_before), size = samplesize)
 
 # creating training and test set
 pp_train = pp_data_before[index,]
@@ -741,8 +739,8 @@ f
 n
 #--------------
 
-nn <- neuralnet(f, 
-          data = m, hidden = c(235, 12), algorithm = "backprop", linear.output = T, learningrate = 0.00001)
+# nn <- neuralnet(f, 
+          # data = m, hidden = c(235, 12), algorithm = "backprop", linear.output = T, learningrate = 0.00001)
 
 
 # c((nn$data %>% names), pp_test %>% names)
@@ -779,6 +777,8 @@ MSE.nn <- sum((test.r - pr.nn_)^2)/nrow(test_)
 
 
 ```{r}
+pp_data_before <- pp_data_test %>% filter(year != 20)
+pp_data_after <- pp_data_test %>% filter(year == 20)
 setdiff(pp_data_before$plant, pp_data_after$plant)
 
 diffs <- pp_data_after$plant[which(!pp_data_after$plant %in% pp_data_before$plant)] %>% unique
@@ -826,15 +826,19 @@ pp_data_after$parent_company <- pp_data_after$parent_company %>% py(sep = "", di
 pp_data_after$area <- pp_data_after$area %>% py(sep = "", dic = pydic(method = 'toneless', dic = "pinyin2"))
 
 ```
+#------------------------------------------
 
 ```{r}
 pp_data_bf_dummy <- fastDummies::dummy_cols(pp_data_before3, select_columns = c("month","parent_company", "area", "plant_1" ))
 
 pp_data_bf_dummy <- pp_data_bf_dummy[,!names(pp_data_bf_dummy) %in% c("month","parent_company", "area", "plant_1" )]
+
+# year cannot be a dummy cause u'll have to predict it
 #------------------------------------------
 pp_data_after_dummy <- fastDummies::dummy_cols(pp_data_after, select_columns = c("month","parent_company", "area", "plant_1" ))
 
 pp_data_after_dummy <- pp_data_after_dummy[,!names(pp_data_after_dummy) %in% c("month","parent_company", "area", "plant_1" )]
+ 
 ```
 
 
@@ -852,42 +856,53 @@ pp_test = pp_data_bf_dummy[-index,]
 
 ```{r}
 names(pp_train) <- make.names(names(pp_train))
+names(pp_test) <- make.names(names(pp_test))
 n <- names(pp_train %>% data.frame)
-view(n)
+# view(n)
 f <- as.formula(paste("complete ~", paste(n[!n %in% c("complete")], collapse = " + ")))
 
 # which(str(pp_train) == factor)
 #--------------
+which(is.factor(pp_test[,-2]  ))
 
 
 nn <- neuralnet(f, 
           data = pp_train, 
-          hidden = c(5), 
+          hidden = c(6), 
           algorithm = "backprop", 
           linear.output = T, 
-          learningrate = 0.0001, 
+          learningrate = 0.0001,
           stepmax=1e+07,
           threshold = .2)
 
+# which(is.numeric(pp_test[,-2][,1]) == T)
+# pp_test2 <- pp_test[,-2] 
+# pp_test2[,1] <- pp_test2[,1] %>% as.numeric()
+# c((nn$data %>% names), pp_test %>% names)
+
+# sapply(pp_test2, class)
+#------------------------------------------
+#------------------------------------------
  # pp_test[,-2]
 
 #------------------------------------------
-for (i in 1:2541){#
-  for (j in 1:696){#
-    if (is.numeric(pp_test2[i,j]) == T){
-      pp_test2[i,j] <- as.numeric(pp_test2[i,j])
-    }
-    # else{
-    #   print("no")
-    # }
-  }
-}
+# for (i in 1:2541){#
+#   for (j in 1:696){#
+#     if (is.numeric(pp_test2[i,j]) == T){
+#       pp_test2[i,j] <- as.numeric(pp_test2[i,j])
+#     }
+#     # else{
+#     #   print("no")
+#     # }
+#   }
+# }
 
 #------------------------------------------
 plot(nn)
 
 # c((nn$data %>% names), pp_test %>% names)
-predict_testNN = compute(nn,pp_test[,-2])
+predict_testNN = compute(nn, pp_test[,-2])
+
 predict_testNN = (predict_testNN$net.result * (max(pp_data_before$complete) - min(pp_data_before$complete))) + min(pp_data_before$complete)
 # plot(nn)
 # pp_test <- pp_test[ , names(pp_test) %in% n]
@@ -897,14 +912,23 @@ pp_test$complete2 <- (pp_test$complete * (max(pp_data_before$complete) - min(pp_
 
 ```{r}
 
+# plot(pp_test$complete, predict_testNN, col='blue', pch=16, ylab = "predicted complete NN", xlab = "real complete")
+
+
 #------------------------------------------
 ## RMSE test data
-plot(pp_test$complete2, predict_testNN, col='blue', pch=16, ylab = "predicted rating NN", xlab = "real rating")
+plot(pp_test$complete2, predict_testNN, col='blue', pch=16, ylab = "predicted complete NN", xlab = "real complete")
+
 
 abline(0,1)
-
 # Calculate Root Mean Square Error (RMSE)
+
+# pp_data_before4 <- pp_data_before[pp_data_after$plant %in% pp_data_before$plant,]
+
+# RMSE.NN = (sum((pp_test$complete - predict_testNN)^2) / nrow(pp_test)) ^ 0.5
+
 RMSE.NN = (sum((pp_test$complete2 - predict_testNN)^2) / nrow(pp_test)) ^ 0.5
+
 RMSE.NN
 
 
@@ -1045,3 +1069,18 @@ p12
 LR_RMSE <- sqrt(sum((pp_test$pred_mean.com-pp_test$mean.com)^2)/nrow(pp_test))
 LR_RMSE
 ```
+
+
+```{r}
+for (i in 1:2541){#
+  for (j in 1:696){#
+    if (is.numeric(pp_test2[i,j]) == T){
+      pp_test2[i,j] <- as.numeric(pp_test2[i,j])
+    }
+    # else{
+    #   print("no")
+    # }
+  }
+  }
+```
+
