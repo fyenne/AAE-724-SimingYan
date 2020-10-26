@@ -777,12 +777,22 @@ MSE.nn <- sum((test.r - pr.nn_)^2)/nrow(test_)
 
 
 ```{r}
-pp_data_before <- pp_data_test %>% filter(year != 20)
-pp_data_after <- pp_data_test %>% filter(year == 20)
+pp_data_before <- pp_data_test %>% filter(year != 20 | (year == 20 & month == 1))
+
+
+pp_data_after <- pp_data_test %>% filter(year == 20 & month != 1)
 setdiff(pp_data_before$plant, pp_data_after$plant)
+setdiff(pp_data_after$plant, pp_data_before$plant)
+
 
 diffs <- pp_data_after$plant[which(!pp_data_after$plant %in% pp_data_before$plant)] %>% unique
 diffs
+
+# pp_data_after$parent_company[which(!pp_data_after$parent_company %in% pp_data_before$parent_company)] %>% unique
+#--------------------------------------------
+pp_data_before[pp_data_before$plant %in% setdiff(pp_data_before$plant, pp_data_after$plant),]$complete %>% sum / pp_data_before$complete %>% sum
+#--------------------------------------------
+
 
 pp_data_after <- pp_data_after[!pp_data_after$plant %in% diffs,]
 
@@ -803,6 +813,7 @@ pp_data_before3 <- pp_data_before3[,-c(1:10, 14,22,23, 24)]
 pp_data_before3 <- cbind(scaled, pp_data_before3)
 names(pp_data_before3)[11:12] = c("fossilfuel", "bigfive")
 
+# pp_data_before3 <- pp_data_before3[,-c(5,6)]
 #------------------------------------------
 #scale data 
 
@@ -818,6 +829,8 @@ names(pp_data_after)[11:12] = c("fossilfuel", "bigfive")
 ```
 
 ```{r}
+#--------------------------------------------
+# py translations
 pp_data_before3$parent_company <- pp_data_before3$parent_company %>% py(sep = "", dic = pydic(method = 'toneless', dic = "pinyin2"))
 pp_data_before3$area <- pp_data_before3$area %>% py(sep = "", dic = pydic(method = 'toneless', dic = "pinyin2"))
 #------------------------------------------
@@ -829,15 +842,15 @@ pp_data_after$area <- pp_data_after$area %>% py(sep = "", dic = pydic(method = '
 #------------------------------------------
 
 ```{r}
-pp_data_bf_dummy <- fastDummies::dummy_cols(pp_data_before3, select_columns = c("month","parent_company", "area", "plant_1" ))
-
-pp_data_bf_dummy <- pp_data_bf_dummy[,!names(pp_data_bf_dummy) %in% c("month","parent_company", "area", "plant_1" )]
+pp_data_bf_dummy <- fastDummies::dummy_cols(pp_data_before3, select_columns = c("month", "year", "parent_company", "area", "plant_1" ))
+# "month"
+pp_data_bf_dummy <- pp_data_bf_dummy[,!names(pp_data_bf_dummy) %in% c("parent_company", "year", "month", "area", "plant_1" )]
 
 # year cannot be a dummy cause u'll have to predict it
 #------------------------------------------
-pp_data_after_dummy <- fastDummies::dummy_cols(pp_data_after, select_columns = c("month","parent_company", "area", "plant_1" ))
+pp_data_after_dummy <- fastDummies::dummy_cols(pp_data_after, select_columns = c("month","year","parent_company", "area", "plant_1" ))
 
-pp_data_after_dummy <- pp_data_after_dummy[,!names(pp_data_after_dummy) %in% c("month","parent_company", "area", "plant_1" )]
+pp_data_after_dummy <- pp_data_after_dummy[,!names(pp_data_after_dummy) %in% c("month","year","parent_company", "area", "plant_1" )]
  
 ```
 
@@ -906,8 +919,8 @@ predict_testNN = compute(nn, pp_test[,-2])
 predict_testNN = (predict_testNN$net.result * (max(pp_data_before$complete) - min(pp_data_before$complete))) + min(pp_data_before$complete)
 # plot(nn)
 # pp_test <- pp_test[ , names(pp_test) %in% n]
-
-pp_test$complete2 <- (pp_test$complete * (max(pp_data_before$complete) - min(pp_data_before$complete))) + min(pp_data_before$complete)
+pp_test2 <- pp_test
+pp_test2$complete2 <- (pp_test$complete * (max(pp_data_before$complete) - min(pp_data_before$complete))) + min(pp_data_before$complete)
 ```
 
 ```{r}
@@ -917,7 +930,7 @@ pp_test$complete2 <- (pp_test$complete * (max(pp_data_before$complete) - min(pp_
 
 #------------------------------------------
 ## RMSE test data
-plot(pp_test$complete2, predict_testNN, col='blue', pch=16, ylab = "predicted complete NN", xlab = "real complete")
+plot(pp_test2$complete2, predict_testNN, col='blue', pch=16, ylab = "predicted complete NN", xlab = "real complete")
 
 
 abline(0,1)
@@ -932,36 +945,105 @@ RMSE.NN = (sum((pp_test$complete2 - predict_testNN)^2) / nrow(pp_test)) ^ 0.5
 RMSE.NN
 
 
-
-#------------------------------------------
-
-# pr.nn <- compute(nn,test_[,1:13])
-# pr.nn_ <- pr.nn$net.result*(max(data$medv)-min(data$medv))+min(data$medv)
-# test.r <- (test_$medv)*(max(data$medv)-min(data$medv))+min(data$medv)
-# MSE.nn <- sum((test.r - pr.nn_)^2)/nrow(test_)
-
-
-
-
-
 ```
 
 ```{r}
+# modify pp_data_after_dummy, for extra names of plants. not sure why appeared?
+
+b = setdiff(names(pp_data_after_dummy), names(pp_test))
+
+a = which(pp_data_after_dummy[,setdiff(names(pp_data_after_dummy), names(pp_test))] == 1)
+
+
+pp_data_after_dummy <- pp_data_after_dummy[-a, ]
+pp_data_after_dummy <- pp_data_after_dummy[ , !names(pp_data_after_dummy) %in% b]
+# pp_data_after_dummy[140,] %>% view
+#--------------------------------------------
+# modift pp_data_after
+# mmmodify <- gsub("parent_company_", "", names(pp_data_after_dummy))
+# mmmmodift <- gsub("plant_1_", "", names(pp_data_after_dummy))
+# which(pp_data_after$plant_1 == mmmmodift)
+# which(pp_data_after$parent_company == mmmodify)
+pp_data_after2 <- pp_data_after[-which(pp_data_after$plant_1 == mmmmodift), ]
+pp_data_after2 <- pp_data_after2[-which(pp_data_after$parent_company == mmmodify), ]
+# 
+# 
+# setdiff(pp_data_after2$plant_1, gsub("plant_1_", "", names(pp_data_after_dummy)))
+# # pp_data_after = pp_data_after[-which(pp_data_after$plant_1 == gsub("plant_1_","", b[-1])),]
+# pp_data_after = pp_data_after[-which(pp_data_after$parent_company == gsub("parent_company_","", b[1])),]
 #------------------------------------------
+# adding plants exists before but disappear by 2020 
+add.dataframe= {}
 ## #prediciton in 2020
 # 我的year 为什么是 dummy啊 反思了
 setdiff(names(pp_data_after_dummy), names(pp_test))
+c = setdiff(names(pp_test), names(pp_data_after_dummy))
+add.dataframe = data.frame(c) %>% transpose()
+names(add.dataframe) = add.dataframe[1,]
+add.dataframe[1:1791, ] = as.numeric(0)
+pp_data_after_dummy = cbind(pp_data_after_dummy, add.dataframe)
+pp_data_after_dummy = lapply(pp_data_after_dummy, as.numeric) %>% data.frame()
+# abort 
+#--------------------------------------------
+names(pp_data_after_dummy) <- make.names(names(pp_data_after_dummy))
 
+#--------------------------------------------
+```
+
+```{r}
+grep("month", names(pp_data_after_dummy), value =T)
+# sum(pp_data_after_dummy$month_10)    0 
+
+pp_data_after_dummy2 <- pp_data_after_dummy
+pp_data_after_dummy2$mo
+```
+
+```{r}
 predict_after = compute(nn, pp_data_after_dummy[,-2])
 predict_afternn = (predict_after$net.result * (max(pp_data_before$complete) - min(pp_data_before$complete))) + min(pp_data_before$complete)
 # plot(nn)
 # pp_test <- pp_test[ , names(pp_test) %in% n]
 
-pp_test$complete2 <- (pp_test$complete * (max(pp_data_before$complete) - min(pp_data_before$complete))) + min(pp_data_before$complete)
+
+```
+
+
+
+
+```{r}
+scheme <- {} %>% data.frame()
+
+# dim(pp_data_after_dummy)
+for (i in 1:dim(pp_data_after_dummy)[1]){
+  for (j in 1:dim(pp_data_after_dummy)[2]){
+    if (j <= 2){
+      scheme[i,j] = pp_data_after_dummy[i,j]
+    }
+    else if (j >= 8 & j <= 12){
+      if (pp_data_after_dummy[i,j] == 1){
+        scheme[i,j] = names(pp_data_after_dummy)[j]
+      }
+      else{
+        scheme[i,j] = NA
+      }
+    }
+  }
+}
+
+scheme %>% na.omit
 ```
 
 
 ```{r}
+pp_data_after2 <- pp_data_after2[-which(pp_data_after2$complete == pp_data_after2$complete %>% min)[1], ]
+
+pp_data_afternn <- data.frame(pred_af = predict_afternn)
+pp_af_predicted <- cbind(pp_data_afternn, pp_data_after2)
+
+pp_af_predicted %>% group_by(month) %>% summarise(sum(pred_af))
+
+pp_data_afternn %>% sum
+(pp_data_test %>% filter(year == 19))$complete %>% sum
 ```
 
 ### 5.23 or directly use the plants in bf_covid time.

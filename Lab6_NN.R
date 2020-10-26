@@ -46,7 +46,8 @@ set.seed(2)
 # act.fct -- default -- logistic activation function, can define it by yourself
 # linear.output = T -- regression or classification
 
-NN = neuralnet(rating ~ ., trainNN, hidden = 3 ,algorithm = "backprop",  learningrate = 0.001, linear.output = T )
+NN = neuralnet(rating ~ ., trainNN, hidden = 3 ,algorithm = "backprop",  learningrate = 0.001, 
+               linear.output = T )
 # plot neural network
 plot(NN)
 
