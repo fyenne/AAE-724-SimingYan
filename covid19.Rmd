@@ -456,6 +456,8 @@ pp_data <- mutate(pp_data, spr_festival = ifelse(month == 1 & year != 18 |
 
 pp_data_dummy <- mutate(pp_data_dummy, bf_covid = ifelse(year != 20 | year == 20 & month == 1, "1", "0"))
 pp_data <- mutate(pp_data, bf_covid = ifelse(year != 20 | year == 20 & month == 1, "1", "0"))
+
+# pp_data <- mutate(pp_data, bf_covid = ifelse())
 #--------------------------------------------
 ```
 
@@ -536,11 +538,11 @@ pp_data %>% str
 
 
 names(pp_data_dummy)
-reg1 <- felm(complete ~ capacity + big_five + city |yearmonth + area3 , data = pp_data)
+reg1 <- felm(complete ~ capacity + bf_covid|year + month + plant , data = pp_data)
 # 
 reg2 <- felm(complete ~ big_five*bf_covid*spr_festival|area3 + month, data = pp_data)
 # coef1 <- summary(reg1)$coef
-summary(reg1)$coef
+summary(reg1)
 summary(reg2)
 
 reg9 <- felm(complete ~ bf_covid|plant, pp_data)
@@ -560,20 +562,20 @@ library(gt)
 library(DataExplorer)
  
 # two different way to creat naive model with interaction terms.
-reg1 <- felm(complete ~ capacity + big_five + city + bf_covid|year + month + area3, 
+reg1 <- felm(complete ~ capacity+ bf_covid + year| month + plant, 
              data = pp_data)
-(reg1 %>% summary)$coef
+(reg1 %>% summary)
 
 
 
 reg2 <- felm(complete ~ 
                capacity +
-               city +
-               # big_five+
-               bf_covid +
+               # city +
+               year + 
+               bf_covid + # delete this line would cause multi-insignificant. set fossil as baseline.
                bf_covid:type_of_p|
-               area3 + year + month|0|
-               year + area3 + plant, 
+               plant + month|0,
+               # year + area3 + plant, 
              data = pp_data)
 (reg2 %>% summary)
 
@@ -582,19 +584,20 @@ mod_stargazer("../report/reg_2.text", reg2, type = "text", align = T, style = "a
 #--------------------------------------------
 pp_data$bf_covid <- as.factor(pp_data$bf_covid)
 pp_data %>% str
-reg_covid <- felm(complete ~ 
+reg_3 <- felm(complete ~ 
                     capacity +
-                    city +
-                    big_five +
-                    bf_covid + 
-                    big_five:bf_covid:type_of_p|
-                    area3 + year + month|
-                    0|
-                    plant + area3 + year , data = pp_data)
+                    year +
+                    # city +
+                    # factor(big_five) +
+                    # bf_covid + 
+                    # bf_covid:big_five + 
+                    big_five:bf_covid:type_of_p - 1|
+                    # plant + month|
+                    0 , data = pp_data)
             # omit=c("big_five0:spr_festival1","big_five1:bf_covid1"))
 #--------------------------------------------
-reg_covid %>% summary
-mod_stargazer("../report/reg_3.text", reg_covid, type = "text", align = T, style = "aer")
+(reg_3 %>% summary)$coef
+mod_stargazer("../report/reg_3.text", reg_3, type = "text", align = T, style = "aer")
 
 ```
 
@@ -786,9 +789,8 @@ pp_data_after <- pp_data_after[!pp_data_after$plant %in% diffs,]
 pp_data_before3 <- pp_data_before[pp_data_after$plant %in% pp_data_before$plant,]
 #------ 好像没什么必要.直接tm用前面的电厂名字不就行了么
 
-
-# creating training and test set
-
+#------------------------------------------
+#scale data 
 
 
 max = apply(pp_data_before3[,c(7,8)], 2, max)
@@ -801,20 +803,38 @@ pp_data_before3 <- pp_data_before3[,-c(1:10, 14,22,23, 24)]
 pp_data_before3 <- cbind(scaled, pp_data_before3)
 names(pp_data_before3)[11:12] = c("fossilfuel", "bigfive")
 
-```
 #------------------------------------------
+#scale data 
+
+max2 = apply(pp_data_after[,c(7,8)], 2, max)
+min2 = apply(pp_data_after[,c(7,8)], 2, min)
+scaled2 = as.data.frame(scale(pp_data_after[,c(7,8)], center = min2, scale = max2 - min2))
+
+pp_data_after <- pp_data_after[,-c(1:10, 14,22,23, 24)]
+
+pp_data_after <- cbind(scaled2, pp_data_after)
+names(pp_data_after)[11:12] = c("fossilfuel", "bigfive")
+
+```
+
 ```{r}
 pp_data_before3$parent_company <- pp_data_before3$parent_company %>% py(sep = "", dic = pydic(method = 'toneless', dic = "pinyin2"))
 pp_data_before3$area <- pp_data_before3$area %>% py(sep = "", dic = pydic(method = 'toneless', dic = "pinyin2"))
+#------------------------------------------
+
+pp_data_after$parent_company <- pp_data_after$parent_company %>% py(sep = "", dic = pydic(method = 'toneless', dic = "pinyin2"))
+pp_data_after$area <- pp_data_after$area %>% py(sep = "", dic = pydic(method = 'toneless', dic = "pinyin2"))
 
 ```
-#------------------------------------------
+
 ```{r}
-pp_data_bf_dummy <- fastDummies::dummy_cols(pp_data_before3, select_columns = c("month","year","parent_company", "area", "plant_1" ))
+pp_data_bf_dummy <- fastDummies::dummy_cols(pp_data_before3, select_columns = c("month","parent_company", "area", "plant_1" ))
 
-pp_data_bf_dummy <- pp_data_bf_dummy[,!names(pp_data_bf_dummy) %in% c("month","year","parent_company", "area", "plant_1" )]
+pp_data_bf_dummy <- pp_data_bf_dummy[,!names(pp_data_bf_dummy) %in% c("month","parent_company", "area", "plant_1" )]
+#------------------------------------------
+pp_data_after_dummy <- fastDummies::dummy_cols(pp_data_after, select_columns = c("month","parent_company", "area", "plant_1" ))
 
-
+pp_data_after_dummy <- pp_data_after_dummy[,!names(pp_data_after_dummy) %in% c("month","parent_company", "area", "plant_1" )]
 ```
 
 
@@ -841,37 +861,84 @@ f <- as.formula(paste("complete ~", paste(n[!n %in% c("complete")], collapse = "
 
 
 nn <- neuralnet(f, 
-          data = pp_train, hidden = c(5), algorithm = "backprop", linear.output = T, learningrate = 0.0001)
+          data = pp_train, 
+          hidden = c(5), 
+          algorithm = "backprop", 
+          linear.output = T, 
+          learningrate = 0.0001, 
+          stepmax=1e+07,
+          threshold = .2)
 
-# pp_test[,-2]
+ # pp_test[,-2]
 
+#------------------------------------------
+for (i in 1:2541){#
+  for (j in 1:696){#
+    if (is.numeric(pp_test2[i,j]) == T){
+      pp_test2[i,j] <- as.numeric(pp_test2[i,j])
+    }
+    # else{
+    #   print("no")
+    # }
+  }
+}
+
+#------------------------------------------
+plot(nn)
 
 # c((nn$data %>% names), pp_test %>% names)
-predict_testNN = compute(nn, pp_test[,-2])
+predict_testNN = compute(nn,pp_test[,-2])
 predict_testNN = (predict_testNN$net.result * (max(pp_data_before$complete) - min(pp_data_before$complete))) + min(pp_data_before$complete)
 # plot(nn)
 # pp_test <- pp_test[ , names(pp_test) %in% n]
+
+pp_test$complete2 <- (pp_test$complete * (max(pp_data_before$complete) - min(pp_data_before$complete))) + min(pp_data_before$complete)
 ```
+
 ```{r}
-plot(pp_test$complete, predict_testNN, col='blue', pch=16, ylab = "predicted rating NN", xlab = "real rating")
+
+#------------------------------------------
+## RMSE test data
+plot(pp_test$complete2, predict_testNN, col='blue', pch=16, ylab = "predicted rating NN", xlab = "real rating")
 
 abline(0,1)
 
 # Calculate Root Mean Square Error (RMSE)
-RMSE.NN = (sum((pp_test$complete - predict_testNN)^2) / nrow(pp_test)) ^ 0.5
+RMSE.NN = (sum((pp_test$complete2 - predict_testNN)^2) / nrow(pp_test)) ^ 0.5
 RMSE.NN
 
 
 
-pr.nn <- compute(nn,test_[,1:13])
-pr.nn_ <- pr.nn$net.result*(max(data$medv)-min(data$medv))+min(data$medv)
-test.r <- (test_$medv)*(max(data$medv)-min(data$medv))+min(data$medv)
-MSE.nn <- sum((test.r - pr.nn_)^2)/nrow(test_)
+#------------------------------------------
+
+# pr.nn <- compute(nn,test_[,1:13])
+# pr.nn_ <- pr.nn$net.result*(max(data$medv)-min(data$medv))+min(data$medv)
+# test.r <- (test_$medv)*(max(data$medv)-min(data$medv))+min(data$medv)
+# MSE.nn <- sum((test.r - pr.nn_)^2)/nrow(test_)
+
+
 
 
 
 ```
 
+```{r}
+#------------------------------------------
+## #prediciton in 2020
+# 我的year 为什么是 dummy啊 反思了
+setdiff(names(pp_data_after_dummy), names(pp_test))
+
+predict_after = compute(nn, pp_data_after_dummy[,-2])
+predict_afternn = (predict_after$net.result * (max(pp_data_before$complete) - min(pp_data_before$complete))) + min(pp_data_before$complete)
+# plot(nn)
+# pp_test <- pp_test[ , names(pp_test) %in% n]
+
+pp_test$complete2 <- (pp_test$complete * (max(pp_data_before$complete) - min(pp_data_before$complete))) + min(pp_data_before$complete)
+```
+
+
+```{r}
+```
 
 ### 5.23 or directly use the plants in bf_covid time.
 
@@ -963,6 +1030,7 @@ names(dfp_plus)[2] = "sum(complete)"
 
 dfp2 <- rbind(dfp,dfp_plus)
 ```
+
 ```{r, warning = F}
 p12 <- ggplot(pp_test2, aes(x = month, y=)) + 
   geom_point(alpha=0.8, col ="grey") + 
