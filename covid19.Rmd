@@ -995,7 +995,14 @@ grep("month", names(pp_data_after_dummy), value =T)
 # sum(pp_data_after_dummy$month_10)    0 
 
 pp_data_after_dummy2 <- pp_data_after_dummy
-pp_data_after_dummy2$mo
+pp_data_after_dummy2
+
+#--------------------------------------------
+# this sheet is not working. 
+# pp_data_bf_dummy$year 
+pp_19_20_after <- pp_data_bf_dummy %>% filter(year_17 == 1)
+pp_19_20_after$year_17 = 0 %>% as.numeric()
+pp_19_20_after$year_20 = 1 %>% as.numeric()
 ```
 
 ```{r}
@@ -1004,7 +1011,19 @@ predict_afternn = (predict_after$net.result * (max(pp_data_before$complete) - mi
 # plot(nn)
 # pp_test <- pp_test[ , names(pp_test) %in% n]
 
+#--------------------------------------------
+# mimic calculating using 19 year data
+predict_19_20_after = compute(nn, pp_19_20_after[,-2])
+predict_19_20_afternn = (predict_19_20_after$net.result * (max(pp_data_before$complete) - min(pp_data_before$complete))) + min(pp_data_before$complete)
 
+data_19 <- pp_data %>% filter(year == 17)
+data_19 <- cbind(predict_19_20_afternn, data_19)
+dfpp <- data_19 %>% group_by(month) %>% summarise(sum(predict_19_20_afternn))
+
+
+dfpp %>% names()
+gpt(dfpp) + aes(x = month, y = `sum(predict_19_20_afternn)`) +
+  geom_line()
 ```
 
 
