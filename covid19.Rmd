@@ -991,12 +991,26 @@ names(pp_data_after_dummy) <- make.names(names(pp_data_after_dummy))
 ```
 
 ```{r}
-grep("month", names(pp_data_after_dummy), value =T)
+grep("month", names(pp_data_after_dummy), value = T)
 # sum(pp_data_after_dummy$month_10)    0 
 
 pp_data_after_dummy2 <- pp_data_after_dummy
-pp_data_after_dummy2
+pp_20_1 <- pp_data_bf_dummy %>% filter(pp_data_bf_dummy$year_20 == 1)
+# dim(pp_20_1)
+names(pp_20_1) <- make.names(names(pp_20_1))
+pp_data_after_dummy3 <- rbind(pp_20_1, pp_data_after_dummy)
+# pp_data_after_dummy %>% dim
+# which(pp_data_after_dummy3$month_10 == 1) 
+pp_data_after_dummy2 <- pp_data_after_dummy3
 
+
+
+prefix <- "month" %>% paste0("_", c(1:6))
+prefix2 <- "month" %>% paste0("_", c(7:12))
+pp_data_after_dummy2[,prefix2] = pp_data_after_dummy3[,prefix]
+pp_data_after_dummy2[,prefix] = 0 %>% as.numeric()
+pp_data_after_dummy4 = rbind(pp_data_after_dummy2, pp_data_after_dummy3)
+# rowsum(pp_data_after_dummy4[, c(prefix, prefix2)]C)
 #--------------------------------------------
 # this sheet is not working. 
 # pp_data_bf_dummy$year 
@@ -1013,17 +1027,41 @@ predict_afternn = (predict_after$net.result * (max(pp_data_before$complete) - mi
 
 #--------------------------------------------
 # mimic calculating using 19 year data
-predict_19_20_after = compute(nn, pp_19_20_after[,-2])
+predict_19_20_after = compute(nn, pp_data_after_dummy4[,-2])
 predict_19_20_afternn = (predict_19_20_after$net.result * (max(pp_data_before$complete) - min(pp_data_before$complete))) + min(pp_data_before$complete)
 
-data_19 <- pp_data %>% filter(year == 17)
-data_19 <- cbind(predict_19_20_afternn, data_19)
-dfpp <- data_19 %>% group_by(month) %>% summarise(sum(predict_19_20_afternn))
+for (i in 1:dim(pp_data_after_dummy4)[1]){
+  for (j in 8:19){
+    if (pp_data_after_dummy4[i,j] == 1){
+      pp_data_after_dummy4$month[i] = gsub("month_","",names(pp_data_after_dummy4)[j])
+    }
+  }
+}
+
+# which(is.na(pp_data_after_dummy4$month) == F)
+pp_data_after_dummy4$month %>% unique
 
 
+data_funny <- cbind(pp_data_after_dummy4, predict_19_20_afternn)
+data_funny$month <- data_funny$month %>% as.numeric()
+#--------------------------------------------
+# ma de fen ceng chou yang
+
+
+strata(data_funny, "month", size = )
+#--------------------------------------------
+
+# predict_19_20_afternn %>% range
+# data_19 <- pp_data %>% filter(year == 17)
+# data_19 <- cbind(predict_19_20_afternn, data_19)
+# data_19$month <- data_19$month %>% as.numeric()
+dfpp <- data_funny %>% group_by(month) %>% summarise(sum(predict_19_20_afternn))
+
+dfpp
 dfpp %>% names()
 gpt(dfpp) + aes(x = month, y = `sum(predict_19_20_afternn)`) +
-  geom_line()
+  geom_line() +
+  scale_x_continuous(breaks = 1:12)
 ```
 
 

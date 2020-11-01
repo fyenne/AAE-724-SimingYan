@@ -1,0 +1,29 @@
+---
+title: "other ml"
+author: "Siming Yan"
+date: "10/26/2020"
+output: html_document
+---
+
+
+```{r pressuresa, echo=FALSE}
+numFolds <- trainControl(method = 'cv', 
+                         number = 10, 
+                         classProbs = TRUE, 
+                         verboseIter = TRUE, 
+                         summaryFunction = twoClassSummary, 
+                         preProcOptions = list(thresh = 0.25, ICAcomp = 3, k = 5))
+
+nntrain <- train(f , data = pp_train, 
+                 method = 'nnet', 
+                 # preProcess = c('center', 'scale'), 
+                 trControl = numFolds, 
+                 tuneGrid = expand.grid(size=c(10), decay=c(0.1)))
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+```{r}
+# f, 
+          # data = pp_train, 
+```
+

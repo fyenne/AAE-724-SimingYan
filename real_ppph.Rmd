@@ -407,6 +407,14 @@ df <- df[!is.na(df$complete), ]
 dfp <- df %>% group_by(month, year) %>% summarise(sum(complete))
 dfp <- filter(dfp, year != 16)
 dfp$year <- as.factor(dfp$year)
+
+#--------------------------------------------
+#--------------------------------------------
+names(dfpp)[2] = "sum_comp"
+names(dfp)[3] = "sum_comp"
+dfpp$year = "20_predict"
+dfp = rbind (dfpp, dfp)
+# dfp
 ```
 
 
@@ -415,12 +423,12 @@ dfp$year <- as.factor(dfp$year)
 ggthemr('light',type = 'outer')
 p  <- ggplot(dfp) +
   geom_line(aes(x = month, 
-                y = `sum(complete)`, 
+                y = sum_comp, 
                 group = year,
                 color = year),
             size = 1.2) +
    geom_point(aes(x = month, 
-                y = `sum(complete)`, 
+                y = sum_comp, 
                 group = year,
                 color = year),
               color = "black",
