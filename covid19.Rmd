@@ -916,6 +916,7 @@ plot(nn)
 # c((nn$data %>% names), pp_test %>% names)
 predict_testNN = compute(nn, pp_test[,-2])
 
+
 predict_testNN = (predict_testNN$net.result * (max(pp_data_before$complete) - min(pp_data_before$complete))) + min(pp_data_before$complete)
 # plot(nn)
 # pp_test <- pp_test[ , names(pp_test) %in% n]
@@ -931,8 +932,6 @@ pp_test2$complete2 <- (pp_test$complete * (max(pp_data_before$complete) - min(pp
 #------------------------------------------
 ## RMSE test data
 plot(pp_test2$complete2, predict_testNN, col='blue', pch=16, ylab = "predicted complete NN", xlab = "real complete")
-
-
 abline(0,1)
 # Calculate Root Mean Square Error (RMSE)
 
@@ -940,18 +939,18 @@ abline(0,1)
 
 # RMSE.NN = (sum((pp_test$complete - predict_testNN)^2) / nrow(pp_test)) ^ 0.5
 
-RMSE.NN = (sum((pp_test$complete2 - predict_testNN)^2) / nrow(pp_test)) ^ 0.5
+RMSE.NN = (sum((pp_test2$complete2 - predict_testNN)^2) / nrow(pp_test)) ^ 0.5
 
 RMSE.NN
 
-
 ```
+
 
 ```{r}
 # modify pp_data_after_dummy, for extra names of plants. not sure why appeared?
 
 b = setdiff(names(pp_data_after_dummy), names(pp_test))
-
+# b
 a = which(pp_data_after_dummy[,setdiff(names(pp_data_after_dummy), names(pp_test))] == 1)
 
 
@@ -1048,7 +1047,7 @@ data_funny$month <- data_funny$month %>% as.numeric()
 # ma de fen ceng chou yang
 
 
-strata(data_funny, "month", size = )
+# strata(data_funny, "month", size = )
 #--------------------------------------------
 
 # predict_19_20_afternn %>% range

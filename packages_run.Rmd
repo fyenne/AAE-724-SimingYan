@@ -90,6 +90,10 @@ library(glmnet)
 library(e1071)
 library(nnet)
 library(sampling)
+library(summarytools)
+
+library(sjPlot)
+library(qwraps2)
 ```
 
 ## Including Plots

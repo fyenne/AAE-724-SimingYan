@@ -3,11 +3,7 @@ title: "print making graphs 1"
 author: "Siming Yan"
 date: "`r format(Sys.time(), '%d %B, %Y')`"
 output:
-    html_document:
-      theme: spacelab
-      keep_md: true
-      highlight: haddock
-
+    html_document
 ---
 
 ```{r setup, echo=FALSE, cache=FALSE, include = F}
@@ -83,7 +79,9 @@ kbt <- function(...){
     kableExtra::kable_styling(c("striped", "condensed"),
                                full_width = F,
                                position = "center",
-                               row_label_position = "c") %>%
+                               row_label_position = "c",
+                              latex_options = c("scale_down", "hold_position"),
+                              protect_latex = T) %>%
    row_spec(0, bold = T )
 }
 
@@ -145,14 +143,14 @@ pp_data <- read.csv("./pp_data_real.csv")
 #--------------------------------------------
 ## 1. summary data
 
-```{r, echo = F, eval=FALSE}
+```{r, echo = F}
 # percent(9563 / (9563 + 2766))
 pp_data$Fossil.fuel <- as.numeric(pp_data$Fossil.fuel)
 pp_data$big_five <- as.numeric(pp_data$big_five)
 # pp_summary <- (pp_data %>% data.frame() %>% summary) %>% data.frame()
 # # pp_summary$Var2[22]
 # pp_summary %>% filter(Var2 == "   complete")
-
+# 1+1
 
 library(qwraps2)
 # options(qwraps2_markup = "markdown")
@@ -174,16 +172,27 @@ our_summary1 <-
 # pp_data %>% group_by(type_of_p) %>% (max(yearmon) %>% as.Date() - min(yearmon) %>% as.Date())
 
 # unique(paste0(pp_data$big_five, pp_data$plant)) %>% length
-
-st1 <- summary_table(group_by(pp_data, type_of_p), our_summary1) %>% kbt %>%
-  add_header_above(header = c("Observations Level Summary over Type of Plants" = 5), bold = T, font_size = 18)
-st1  
+# kbt <- function(...){
+#   knitr::kable(..., format.args = list(scientific = F), "latex", escape = FALSE) %>%
+#     kableExtra::kable_styling(latex_options = c("striped")) %>%
+#     row_spec(0, bold = T )
+# }
 #--------------------------------------------
-save_kable(st1, file = "../report/table_1.png", zoom = 4, keep_tex = T)
+# st111 <- summary_table(group_by(pp_data, type_of_p), our_summary1) %>% kable
+
+# options(knitr.kable.pm = "+-")
+st1 <- summary_table(group_by(pp_data, type_of_p), our_summary1) %>% kbt %>% 
+  add_header_above(header = c("Observations Level Summary over Type of Plants" = 5), bold = T, font_size = 18)
+# st1 %>% as_image(file = "../table_1.png", width = 22)
+st1
+#--------------------------------------------
+# save_kable(st1, file = "../report/table_1.png", zoom = 4)
+
+# webshot::install_phantomjs()# sjplot(pp_data, fun = "grpfrq")
 ```
+<!-- $$\pm$$ -->
 
-
-```{r, echo = F, eval=FALSE}
+```{r, echo = F}
 pp_data_unique <- pp_data %>% group_by(plant) %>% 
   summarise(mean.comp.plant = mean(complete))
 
@@ -220,7 +229,8 @@ st2 <- summary_table(group_by(pp_data_unique, type_of_p), our_summary2) %>%
   add_header_above(header = c("Plants Level Summary over Type of Plants" = 5), 
                    bold = T, font_size = 18)
 
-save_kable(st2, file = "../report/table_2.png", keep_tex = T, zoom = 4)
+st2
+# save_kable(st2, file = "../report/table_2.png", keep_tex = T, zoom = 4)
 #--------------------------------------------
 # city
 
@@ -249,7 +259,8 @@ our_summary3 <-
 st3 <- summary_table(group_by(pp_data_unique, city), our_summary3) %>%
   kbt %>%
   add_header_above(header = c("Plants Level Summary over City Type" = 3), bold = T , font_size = 18)
-save_kable(st3, file = "../report/table_3.png", keep_tex = T, zoom = 4)
+# save_kable(st3, file = "../report/table_3.png", keep_tex = T, zoom = 4)
+st3
 #--------------------------------------------
 
 # area3
@@ -275,7 +286,8 @@ our_summary4 <-
 
 st4 <- summary_table(group_by(pp_data_unique, area3), our_summary4)  %>%  kbt %>%
   add_header_above(header = c("Plants Level Summary over Area" = 12), bold = T,  font_size = 18)
-save_kable(st4, file = "../report/table_4.png", keep_tex = T, zoom = 4)
+# save_kable(st4, file = "../report/table_4.png", keep_tex = T, zoom = 4)
+st4
 ```
 
 #--------------------------------------------
@@ -304,9 +316,9 @@ xtable <- xtable(upper) %>% data.frame()
 
 st5 <- xtable(upper) %>% kbt %>%
   add_header_above(header = c("Variable correlations" = 9), bold = T, font_size = 18)
+st5 
 
-
-save_kable(st5, file = "../report/table_5.png", keep_tex = T, zoom = 4)
+# save_kable(st5, file = "../report/table_5.png", keep_tex = T, zoom = 4)
 # print(xtable(upper), type = "html", method = "render")
 
 # corstars(mtcars[,1:7], result="html")
