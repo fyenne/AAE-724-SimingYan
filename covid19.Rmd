@@ -828,7 +828,7 @@ names(pp_data_after)[11:12] = c("fossilfuel", "bigfive")
 
 ```
 
-```{r}
+```{r, message=F, warning =F}
 #--------------------------------------------
 # py translations
 pp_data_before3$parent_company <- pp_data_before3$parent_company %>% py(sep = "", dic = pydic(method = 'toneless', dic = "pinyin2"))
@@ -912,8 +912,12 @@ nn <- neuralnet(f,
 
 #------------------------------------------
 plot(nn)
+```
 
+
+```{r}
 # c((nn$data %>% names), pp_test %>% names)
+# load("./nn1025.RData")
 predict_testNN = compute(nn, pp_test[,-2])
 
 
@@ -924,24 +928,13 @@ pp_test2 <- pp_test
 pp_test2$complete2 <- (pp_test$complete * (max(pp_data_before$complete) - min(pp_data_before$complete))) + min(pp_data_before$complete)
 ```
 
-```{r}
-
-# plot(pp_test$complete, predict_testNN, col='blue', pch=16, ylab = "predicted complete NN", xlab = "real complete")
-
+```{r, warning=F, message=F}
 
 #------------------------------------------
 ## RMSE test data
-plot(pp_test2$complete2, predict_testNN, col='blue', pch=16, ylab = "predicted complete NN", xlab = "real complete")
-abline(0,1)
-# Calculate Root Mean Square Error (RMSE)
+plot(pp_test2$complete2, predict_testNN, col='blue', pch=16, ylab = "predicted complete NN", xlab = "real complete"); abline(0,1)
 
-# pp_data_before4 <- pp_data_before[pp_data_after$plant %in% pp_data_before$plant,]
-
-# RMSE.NN = (sum((pp_test$complete - predict_testNN)^2) / nrow(pp_test)) ^ 0.5
-
-RMSE.NN = (sum((pp_test2$complete2 - predict_testNN)^2) / nrow(pp_test)) ^ 0.5
-
-RMSE.NN
+RMSE.NN = (sum((pp_test2$complete2 - predict_testNN)^2) / nrow(pp_test)) ^ 0.5; RMSE.NN
 
 ```
 
@@ -949,18 +942,19 @@ RMSE.NN
 ```{r}
 # modify pp_data_after_dummy, for extra names of plants. not sure why appeared?
 
-b = setdiff(names(pp_data_after_dummy), names(pp_test))
-# b
-a = which(pp_data_after_dummy[,setdiff(names(pp_data_after_dummy), names(pp_test))] == 1)
+b = setdiff(names(pp_data_after_dummy), names(pp_test));b
+a = which(pp_data_after_dummy[,setdiff(names(pp_data_after_dummy), names(pp_test))] == 1);a
 
 
 pp_data_after_dummy <- pp_data_after_dummy[-a, ]
 pp_data_after_dummy <- pp_data_after_dummy[ , !names(pp_data_after_dummy) %in% b]
 # pp_data_after_dummy[140,] %>% view
+
+################### here u gotta compare pp_after and pp_after_dummmy observations. if equal, go compute!
 #--------------------------------------------
 # modift pp_data_after
-# mmmodify <- gsub("parent_company_", "", names(pp_data_after_dummy))
-# mmmmodift <- gsub("plant_1_", "", names(pp_data_after_dummy))
+mmmodify <- gsub("parent_company_", "", names(pp_data_after_dummy));mmmodify
+mmmmodift <- gsub("plant_1_", "", names(pp_data_after_dummy));mmmmodift 
 # which(pp_data_after$plant_1 == mmmmodift)
 # which(pp_data_after$parent_company == mmmodify)
 pp_data_after2 <- pp_data_after[-which(pp_data_after$plant_1 == mmmmodift), ]
@@ -972,19 +966,19 @@ pp_data_after2 <- pp_data_after2[-which(pp_data_after$parent_company == mmmodify
 # pp_data_after = pp_data_after[-which(pp_data_after$parent_company == gsub("parent_company_","", b[1])),]
 #------------------------------------------
 # adding plants exists before but disappear by 2020 
-add.dataframe= {}
-## #prediciton in 2020
-# 我的year 为什么是 dummy啊 反思了
-setdiff(names(pp_data_after_dummy), names(pp_test))
-c = setdiff(names(pp_test), names(pp_data_after_dummy))
-add.dataframe = data.frame(c) %>% transpose()
-names(add.dataframe) = add.dataframe[1,]
-add.dataframe[1:1791, ] = as.numeric(0)
-pp_data_after_dummy = cbind(pp_data_after_dummy, add.dataframe)
-pp_data_after_dummy = lapply(pp_data_after_dummy, as.numeric) %>% data.frame()
-# abort 
-#--------------------------------------------
-names(pp_data_after_dummy) <- make.names(names(pp_data_after_dummy))
+# add.dataframe= {}
+# ## #prediciton in 2020
+# # 我的year 为什么是 dummy啊 反思了
+# setdiff(names(pp_data_after_dummy), names(pp_test)) #0
+# c = setdiff(names(pp_test), names(pp_data_after_dummy));c #144
+# add.dataframe = data.frame(c) %>% transpose()
+# names(add.dataframe) = add.dataframe[1,]
+# add.dataframe[1:1791, ] = as.numeric(0)
+# pp_data_after_dummy = cbind(pp_data_after_dummy, add.dataframe)
+# pp_data_after_dummy = lapply(pp_data_after_dummy, as.numeric) %>% data.frame()
+# # abort 
+# #--------------------------------------------
+# names(pp_data_after_dummy) <- make.names(names(pp_data_after_dummy))
 
 #--------------------------------------------
 ```
@@ -1019,6 +1013,7 @@ pp_19_20_after$year_20 = 1 %>% as.numeric()
 ```
 
 ```{r}
+# setdiff( pp_data_after_dummy, pp_test)
 predict_after = compute(nn, pp_data_after_dummy[,-2])
 predict_afternn = (predict_after$net.result * (max(pp_data_before$complete) - min(pp_data_before$complete))) + min(pp_data_before$complete)
 # plot(nn)
