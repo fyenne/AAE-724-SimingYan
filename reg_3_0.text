@@ -1,0 +1,54 @@
+
+================================================================================
+                                             Electricity Generated in 10k.kWh     
+--------------------------------------------------------------------------------
+non-big5:after_covid:fossil-fuel                		98.116***               
+                                                         (4.575)                
+                                                                                
+big_five:after_covid:fossil-fuel                		149.130***              
+                                                         (8.471)                
+                                                                                
+non-big5:bf_covid:fossil-fuel                		132.630***              
+                                                         (1.973)                
+                                                                                
+big_five:bf_covid:fossil-fuel                		228.490***              
+                                                         (3.657)                
+                                                                                
+non-big5:after_covid:hydro                      		90.135***               
+                                                         (25.413)               
+                                                                                                                                                                
+non-big5:bf_covid:hydro                      		85.690***               
+                                                         (9.342)                
+                                                                                
+non-big5:after_covid:photovoltaic                 	6.538                 
+                                                         (4.598)                
+                                                                                
+big_five:after_covid:photovoltaic                 	8.319                 
+                                                         (11.423)               
+                                                                                
+non-big5:bf_covid:photovoltaic                		5.493***               
+                                                         (2.028)                
+                                                                                
+big_five:bf_covid:photovoltaic                 		7.422                 
+                                                         (4.864)                
+                                                                                
+non-big5:after_covid:wind                         	12.895                
+                                                         (8.902)                
+                                                                                
+big_five:after_covid:wind                         	13.061                
+                                                         (10.375)               
+                                                                                
+non-big5:bf_covid:wind                       		17.410***               
+                                                         (2.889)                
+                                                                                
+big_five:bf_covid:wind                       		14.584***               
+                                                         (3.887)                
+                                                                                
+Observations                                              12,333                
+R2                                                        0.289                 
+Adjusted R2                                               0.288                 
+Residual Std. Error                                113.650 (df = 12319)         
+--------------------------------------------------------------------------------
+
+
+
