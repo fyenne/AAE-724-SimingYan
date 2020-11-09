@@ -1,0 +1,31 @@
+
+==============================================
+                                              	        Electricity Generated in 10k.kWh                
+                                      		  (1)                 (2)        
+-------------------------------------------------------------------------------
+capacity                            		  0.460**              0.458**      
+                                    		  (0.206)             (0.206)      
+                                                                       
+bf_covid                            		  6.595***           13.736***     
+                                    		  (1.846)             (2.362)      
+                                                                       
+year                                		  5.209***             5.179***      
+                                     		  (0.694)             (0.694)      
+                                                                       
+bf_covid: hydro_plant              			         -14.982      
+                                                         	 	         (12.393)      
+
+bf_covid: photovoltaic_plant 			         -12.568***     
+                                                  		         (2.976)      
+                               
+bf_covid: wind_plant                                  	          15.383***     
+                                                        		         (4.300)      
+                                                                       
+Observations                          		12,333               12,333       
+R2                    	 		 0.861                 0.861       
+Adjusted R2                           	 	 0.855                 0.856       
+Residual Std. Error             51.258 (df = 11834) 51.213 (df = 11831)
+-------------------------------------------------------------------------------
+Notes:                       ***Significant at the 1 percent level. 
+                                **Significant at the 5 percent level.  
+                                *Significant at the 10 percent level.   

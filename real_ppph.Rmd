@@ -392,7 +392,8 @@ write.csv(df, file = "./data/PP_data.csv")
 #--------------------------------------------
 
 ```{r reread}
-df <- read.csv("./data/PP_data.csv")
+df <- read.csv("./pp_data_real.csv")
+write.csv(pp_data_test, "./pp_data_real.csv")
 ```
 <!-- #-------------------------------------------- -->
 

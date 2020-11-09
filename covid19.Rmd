@@ -572,13 +572,14 @@ reg2 <- felm(complete ~
                capacity +
                # city +
                year + 
-               bf_covid + # delete this line would cause multi-insignificant. set fossil as baseline.
+               bf_covid +
+               type_of_p+# delete this line would cause multi-insignificant. set fossil as baseline.
                bf_covid:type_of_p|
-               plant + month|0,
+               month |0,
                # year + area3 + plant, 
              data = pp_data)
 (reg2 %>% summary)
-
+(reg1 %>% summary)
 mod_stargazer("../report/reg_1.text", reg1, type = "text", align = T, style = "aer")
 mod_stargazer("../report/reg_2.text", reg2, type = "text", align = T, style = "aer")
 #--------------------------------------------
@@ -838,6 +839,18 @@ pp_data_before3$area <- pp_data_before3$area %>% py(sep = "", dic = pydic(method
 pp_data_after$parent_company <- pp_data_after$parent_company %>% py(sep = "", dic = pydic(method = 'toneless', dic = "pinyin2"))
 pp_data_after$area <- pp_data_after$area %>% py(sep = "", dic = pydic(method = 'toneless', dic = "pinyin2"))
 
+#--------------------------------------------
+# 11.6 预先 filter pp-data-after, 使得其名字和 before 一致
+# 这样不行..............问题其实出现在train set & test set 分组. 有缺失把.
+# setdiff(names(pp_train), names(pp_test))
+# setdiff(names(pp_test), names(pp_train))
+# 也没有阿
+
+# setdiff(pp_data_after$plant_1, pp_data_before3$plant_1)
+# 居然一样阿
+#--------------------------------------------
+
+# which(pp_data_before3$plant_1 == "yangguang#1-3ji")
 ```
 #------------------------------------------
 
@@ -851,7 +864,6 @@ pp_data_bf_dummy <- pp_data_bf_dummy[,!names(pp_data_bf_dummy) %in% c("parent_co
 pp_data_after_dummy <- fastDummies::dummy_cols(pp_data_after, select_columns = c("month","year","parent_company", "area", "plant_1" ))
 
 pp_data_after_dummy <- pp_data_after_dummy[,!names(pp_data_after_dummy) %in% c("month","year","parent_company", "area", "plant_1" )]
- 
 ```
 
 
@@ -887,6 +899,15 @@ nn <- neuralnet(f,
           learningrate = 0.0001,
           stepmax=1e+07,
           threshold = .2)
+
+nn_new <- neuralnet(f, 
+          data = pp_train, 
+          hidden = c(10, 4), 
+          algorithm = "backprop", 
+          linear.output = T, 
+          learningrate = 0.00001,
+          stepmax=1e+07,
+          threshold = .15)
 
 # which(is.numeric(pp_test[,-2][,1]) == T)
 # pp_test2 <- pp_test[,-2] 
@@ -926,6 +947,9 @@ predict_testNN = (predict_testNN$net.result * (max(pp_data_before$complete) - mi
 # pp_test <- pp_test[ , names(pp_test) %in% n]
 pp_test2 <- pp_test
 pp_test2$complete2 <- (pp_test$complete * (max(pp_data_before$complete) - min(pp_data_before$complete))) + min(pp_data_before$complete)
+
+
+
 ```
 
 ```{r, warning=F, message=F}
@@ -936,29 +960,37 @@ plot(pp_test2$complete2, predict_testNN, col='blue', pch=16, ylab = "predicted c
 
 RMSE.NN = (sum((pp_test2$complete2 - predict_testNN)^2) / nrow(pp_test)) ^ 0.5; RMSE.NN
 
+RMSE.NN0 = (sum((pp_test$complete - predict_testNN$net.result)^2) / nrow(pp_test)) ^ 0.5; RMSE.NN0
 ```
 
 
 ```{r}
 # modify pp_data_after_dummy, for extra names of plants. not sure why appeared?
-
-b = setdiff(names(pp_data_after_dummy), names(pp_test));b
-a = which(pp_data_after_dummy[,setdiff(names(pp_data_after_dummy), names(pp_test))] == 1);a
-
-
-pp_data_after_dummy <- pp_data_after_dummy[-a, ]
-pp_data_after_dummy <- pp_data_after_dummy[ , !names(pp_data_after_dummy) %in% b]
+# 并不存在 after 有的 before 无的电厂. 已经证明.
+# b = setdiff(names(pp_data_after_dummy), names(pp_test));b
+# b
+# 
+# #--------------------------------------------
+# # 下面这行可能有问题
+# a = which(pp_data_after_dummy[,setdiff(names(pp_data_after_dummy), names(pp_test))] == 1);a
+# # setdiff( names(pp_test),names(pp_data_after_dummy)) # yi bai duo ges
+# # pp_data_after_dummy[,setdiff(names(pp_data_after_dummy), names(pp_test))] %>% View()
+# # View(b)
+# 
+# pp_data_after_dummy <- pp_data_after_dummy[-a, ]
+# pp_data_after_dummy <- pp_data_after_dummy[ , !names(pp_data_after_dummy) %in% b]
 # pp_data_after_dummy[140,] %>% view
 
-################### here u gotta compare pp_after and pp_after_dummmy observations. if equal, go compute!
+################## here u gotta compare pp_after and pp_after_dummmy observations. if equal, go compute!
 #--------------------------------------------
-# modift pp_data_after
-mmmodify <- gsub("parent_company_", "", names(pp_data_after_dummy));mmmodify
-mmmmodift <- gsub("plant_1_", "", names(pp_data_after_dummy));mmmmodift 
+# # modift pp_data_after
+# dim(pp_test)
+# # mmmodify <- gsub("parent_company_", "", names(pp_data_after_dummy));mmmodify
+# mmmmodift <- gsub("plant_1_", "", b);mmmmodift 
 # which(pp_data_after$plant_1 == mmmmodift)
-# which(pp_data_after$parent_company == mmmodify)
-pp_data_after2 <- pp_data_after[-which(pp_data_after$plant_1 == mmmmodift), ]
-pp_data_after2 <- pp_data_after2[-which(pp_data_after$parent_company == mmmodify), ]
+# # which(pp_data_after$parent_company == mmmodify)
+# pp_data_after2 <- pp_data_after[-which(pp_data_after$plant_1 == mmmmodift), ]
+# pp_data_after2 <- pp_data_after2[-which(pp_data_after$parent_company == mmmodify), ]
 # 
 # 
 # setdiff(pp_data_after2$plant_1, gsub("plant_1_", "", names(pp_data_after_dummy)))
@@ -969,74 +1001,123 @@ pp_data_after2 <- pp_data_after2[-which(pp_data_after$parent_company == mmmodify
 # add.dataframe= {}
 # ## #prediciton in 2020
 # # 我的year 为什么是 dummy啊 反思了
-# setdiff(names(pp_data_after_dummy), names(pp_test)) #0
-# c = setdiff(names(pp_test), names(pp_data_after_dummy));c #144
-# add.dataframe = data.frame(c) %>% transpose()
-# names(add.dataframe) = add.dataframe[1,]
-# add.dataframe[1:1791, ] = as.numeric(0)
-# pp_data_after_dummy = cbind(pp_data_after_dummy, add.dataframe)
+# setdiff(names(pp_data_after), names(pp_test)) #0
+c = setdiff(names(pp_data_bf_dummy), names(pp_data_after_dummy));c #135
+
+add.dataframe = data.frame(c) %>% transpose()
+names(add.dataframe) = add.dataframe[1,]
+add.dataframe[1:1796, ] = as.numeric(0)
+pp_data_after_dummy = cbind(pp_data_after_dummy, add.dataframe)
 # pp_data_after_dummy = lapply(pp_data_after_dummy, as.numeric) %>% data.frame()
 # # abort 
 # #--------------------------------------------
 # names(pp_data_after_dummy) <- make.names(names(pp_data_after_dummy))
-
-#--------------------------------------------
-```
-
-```{r}
-grep("month", names(pp_data_after_dummy), value = T)
-# sum(pp_data_after_dummy$month_10)    0 
-
 pp_data_after_dummy2 <- pp_data_after_dummy
-pp_20_1 <- pp_data_bf_dummy %>% filter(pp_data_bf_dummy$year_20 == 1)
-# dim(pp_20_1)
-names(pp_20_1) <- make.names(names(pp_20_1))
-pp_data_after_dummy3 <- rbind(pp_20_1, pp_data_after_dummy)
-# pp_data_after_dummy %>% dim
-# which(pp_data_after_dummy3$month_10 == 1) 
-pp_data_after_dummy2 <- pp_data_after_dummy3
 
 
-
-prefix <- "month" %>% paste0("_", c(1:6))
-prefix2 <- "month" %>% paste0("_", c(7:12))
-pp_data_after_dummy2[,prefix2] = pp_data_after_dummy3[,prefix]
-pp_data_after_dummy2[,prefix] = 0 %>% as.numeric()
-pp_data_after_dummy4 = rbind(pp_data_after_dummy2, pp_data_after_dummy3)
-# rowsum(pp_data_after_dummy4[, c(prefix, prefix2)]C)
+#save image of after dummy
 #--------------------------------------------
-# this sheet is not working. 
-# pp_data_bf_dummy$year 
-pp_19_20_after <- pp_data_bf_dummy %>% filter(year_17 == 1)
-pp_19_20_after$year_17 = 0 %>% as.numeric()
-pp_19_20_after$year_20 = 1 %>% as.numeric()
+# pp_data_after_dummy %>% dim
+# for (i in 1:1791){#
+#   for (j in 1:708){#
+#     if (is.numeric(pp_data_after_dummy[i,j]) == F){
+#       pp_data_after_dummy[i,j] <- as.numeric(pp_data_after_dummy[i,j])
+#     }
+#     # else{
+#     #   print("no")
+#     # }
+#   }
+#   }
+pp_data_after_dummy3 <- lapply(pp_data_after_dummy, function(x) {
+    if(is.character(x)) as.numeric(x) else x
+})
+pp_data_after_dummy3 <- pp_data_after_dummy3 %>% data.frame()
+
+pp_data_after_dummy3$month_1 %>% class
+# pp_data_after_dummy3 <- lapply(pp_data_after_dummy, function(x) {
+    # if(is.factor(x)) as.numeric(as.character(x)) else x
+# })
+
+
+lapply(pp_data_after_dummy, function(x) {
+    if(is.character(x)) print(x)
+})
+
+
+df2 <- mutate_all(pp_data_after_dummy, function(x) as.numeric(as.character(x)))
 ```
 
-```{r}
+<!-- # ```{r} -->
+<!-- # # @@@@@@@@@@@2section abort@@@@@@@@@@@@ -->
+<!-- #  -->
+<!-- # grep("month", names(pp_data_after_dummy), value = T) -->
+<!-- # # sum(pp_data_after_dummy$month_10)    0  -->
+<!-- #  -->
+<!-- # pp_data_after_dummy2 <- pp_data_after_dummy -->
+<!-- # pp_20_1 <- pp_data_bf_dummy %>% filter(pp_data_bf_dummy$year_20 == 1) -->
+<!-- # # dim(pp_20_1) -->
+<!-- # names(pp_20_1) <- make.names(names(pp_20_1)) -->
+<!-- # pp_data_after_dummy3 <- rbind(pp_20_1, pp_data_after_dummy) -->
+<!-- # # pp_data_after_dummy %>% dim -->
+<!-- # # which(pp_data_after_dummy3$month_10 == 1)  -->
+<!-- # pp_data_after_dummy2 <- pp_data_after_dummy3 -->
+<!-- #  -->
+<!-- #  -->
+<!-- #  -->
+<!-- # prefix <- "month" %>% paste0("_", c(1:6)) -->
+<!-- # prefix2 <- "month" %>% paste0("_", c(7:12)) -->
+<!-- # pp_data_after_dummy2[,prefix2] = pp_data_after_dummy3[,prefix] -->
+<!-- # pp_data_after_dummy2[,prefix] = 0 %>% as.numeric() -->
+<!-- # pp_data_after_dummy4 = rbind(pp_data_after_dummy2, pp_data_after_dummy3) -->
+<!-- # # rowsum(pp_data_after_dummy4[, c(prefix, prefix2)]C) -->
+<!-- # #-------------------------------------------- -->
+<!-- # # this sheet is not working.  -->
+<!-- # # pp_data_bf_dummy$year  -->
+<!-- # pp_19_20_after <- pp_data_bf_dummy %>% filter(year_17 == 1) -->
+<!-- # pp_19_20_after$year_17 = 0 %>% as.numeric() -->
+<!-- # pp_19_20_after$year_20 = 1 %>% as.numeric() -->
+<!-- # ``` -->
+
+```{r, warning =F, message=F}
+names(pp_data_after_dummy) <- make.names(names(pp_data_after_dummy))
 # setdiff( pp_data_after_dummy, pp_test)
-predict_after = compute(nn, pp_data_after_dummy[,-2])
+predict_after = compute(nn, df2[,-2])
 predict_afternn = (predict_after$net.result * (max(pp_data_before$complete) - min(pp_data_before$complete))) + min(pp_data_before$complete)
 # plot(nn)
 # pp_test <- pp_test[ , names(pp_test) %in% n]
+predict_after$net.result %>% summary
+pp_test2$complete %>% summary
+#--------------------------------------------
+# debug
+# setdiff(pp_data_after_dummy3 ,pp_test)
+# error(setdiff(pp_data_after_dummy ,pp_test))
+```
+## rp result.
 
+```{r}
 #--------------------------------------------
 # mimic calculating using 19 year data
-predict_19_20_after = compute(nn, pp_data_after_dummy4[,-2])
-predict_19_20_afternn = (predict_19_20_after$net.result * (max(pp_data_before$complete) - min(pp_data_before$complete))) + min(pp_data_before$complete)
+# predict_19_20_after = compute(nn, pp_data_after_dummy4[,-2])
+# predict_19_20_afternn = (predict_19_20_after$net.result * (max(pp_data_before$complete) - min(pp_data_before$complete))) + min(pp_data_before$complete)
+# 
+# for (i in 1:dim(pp_data_after_dummy4)[1]){
+#   for (j in 8:19){
+#     if (pp_data_after_dummy4[i,j] == 1){
+#       pp_data_after_dummy4$month[i] = gsub("month_","",names(pp_data_after_dummy4)[j])
+#     }
+#   }
+# }
+# 
+# # which(is.na(pp_data_after_dummy4$month) == F)
+# # pp_data_after_dummy4$month %>% unique
+# pp_data[which(pp_data$plant_1 == "wuxiangdianchang"),] %>% View()
+# #--------------------------------------------
+#--------------------------------------------
 
-for (i in 1:dim(pp_data_after_dummy4)[1]){
-  for (j in 8:19){
-    if (pp_data_after_dummy4[i,j] == 1){
-      pp_data_after_dummy4$month[i] = gsub("month_","",names(pp_data_after_dummy4)[j])
-    }
-  }
-}
 
-# which(is.na(pp_data_after_dummy4$month) == F)
-pp_data_after_dummy4$month %>% unique
+data_funny <- cbind(pp_data_after, predict_afternn)
+setdiff(pp_data_after$plant_1, pp_data_before3$plant_1)
 
-
-data_funny <- cbind(pp_data_after_dummy4, predict_19_20_afternn)
 data_funny$month <- data_funny$month %>% as.numeric()
 #--------------------------------------------
 # ma de fen ceng chou yang
@@ -1049,11 +1130,11 @@ data_funny$month <- data_funny$month %>% as.numeric()
 # data_19 <- pp_data %>% filter(year == 17)
 # data_19 <- cbind(predict_19_20_afternn, data_19)
 # data_19$month <- data_19$month %>% as.numeric()
-dfpp <- data_funny %>% group_by(month) %>% summarise(sum(predict_19_20_afternn))
+dfpp <- data_funny %>% group_by(month) %>% summarise(sum(predict_afternn))
 
 dfpp
 dfpp %>% names()
-gpt(dfpp) + aes(x = month, y = `sum(predict_19_20_afternn)`) +
+gpt(dfpp) + aes(x = month, y = `sum(predict_afternn)`) +
   geom_line() +
   scale_x_continuous(breaks = 1:12)
 ```
@@ -1113,18 +1194,18 @@ pp_data_after2 <- pp_data_before[,c("year", "month")]
 # which(is.na(pp_train))
 # names(pp_train)
 
-tuneGrid <- data.frame(
-    alpha = seq(0, 1, length = 5),
-    lambda = seq(0, 1, length = 20)
-)
+
+my.grid <- expand.grid(.decay = c(0.5, 0.1), .size = c(10))
+# mynnetfit <- train(DOC  ~ ., data = MyData, method = "nnet", maxit = 100, tuneGrid = my.grid, trace = f)
 
 # Fit random forest: model
-lr_model <- train(
-  complete ~ .,
+nn_model <- train(
+  f,
   data = pp_train, 
   method = "nnet",
-  preProcess = "range",
-  tuneLength = 2,
+  tuneGrid = my.grid,
+  # preProcess = "range",
+  # tuneLength = 2,
   trace = FALSE,
   maxit = 100)
 
@@ -1142,19 +1223,46 @@ plot(lr_model)
 #                  maxit = 100)
 
 
-model <- train(y ~ x1+x2, dat, method='nnet', linout=TRUE, trace = FALSE)
+# model <- train(y ~ x1+x2, dat, method='nnet', linout=TRUE, trace = FALSE)
 ```
 
 ```{r}
+tuneGrid <- data.frame(
+    alpha = seq(0, 1, length = 5),
+    lambda = seq(0.0001, 1, length = 20)
+)
+
+# Fit random forest: model
+lr_model <- train(
+  f,
+  data = pp_train, 
+  method = "glmnet",
+  tuneGrid = tuneGrid,
+  trControl = myControl
+)
 # lr_model$bestTune
 # lr_model$finalModel ## dont run
-# pp_test <- pp_test %>% filter(pp_test$plant_1 != c("chongfudianchang", "kunpengguangfu", "shangpoguangfu", "wuxiangyongxinguangfu"))
-# which(pp_test$plant_1 == "chongfudianchang")
+
 
 # mod2$xlevels[["y"]] <- union(mod2$xlevels[["y"]], levels(test$y))
+# 1+1
+pred_test_lr <- predict(lr_model, newdata = pp_test)
+pp_test_lr <- cbind(pp_test, pred_test_lr)
 
-pred_mean.com <- predict(lr_model, newdata = pp_test)
-pp_test <- cbind(pp_test, pred_mean.com)
+pred_after_lr <- predict(lr_model, newdata = df2)
+pp_after_lr <- cbind(pp_data_after, pred_after_lr)
+# uncenter.
+pp_after_lr$pred_after_lr2 <- (pp_after_lr$pred_after_lr * (max(pp_data_before$complete) - min(pp_data_before$complete))) + min(pp_data_before$complete)
+
+pp_after_lr %>% group_by(month) %>% summarise(sum(pred_after_lr2))
+#--------------------------------------------
+```
+
+
+```{r}
+plot(pp_test_lr$complete, pred_test_lr, col='blue', pch=16, ylab = "predicted complete NN", xlab = "real complete"); abline(0,1)
+
+RMSE.NN = (sum((pp_test_lr$complete - pred_test_lr)^2) / nrow(pp_test_lr)) ^ 0.5; RMSE.NN
 ```
 
 
@@ -1176,44 +1284,65 @@ LR_RMSE
 
 
 ```{r, warning = F}
-pred_mean.com2 <- predict(lr_model, newdata = pp_data_after)
-pp_test2 <- cbind(pp_data_after, pred_mean.com2)
 
-dfp_plus <- pp_test2 %>% group_by(month) %>% summarise(sum(pred_mean.com2)) 
-dfp_plus$year = "20pre"
-# pp_test2 %>% group_by(month) %>% summarise(sum(mean.com.area3)) %>% plot
+#sSGB
+ tuneGrid <- data.frame(
+  .n.trees = 10000,
+  .interaction.depth = c(5,6,7),
+  .shrinkage = 0.01,
+  .n.minobsinnode = 5
+)
 
-names(dfp_plus)[2] = "sum(complete)"
-
-dfp2 <- rbind(dfp,dfp_plus)
+# Fit random forest: model
+sgb_model <- train(
+  f,
+  tuneLength = 1,
+  data = pp_train, 
+  method = 'gbm',
+  tuneGrid = tuneGrid,
+  trControl = trainControl(
+    method = "cv", 
+    number = 10, 
+    verboseIter = FALSE
+  )
+)
 ```
 
 ```{r, warning = F}
-p12 <- ggplot(pp_test2, aes(x = month, y=)) + 
-  geom_point(alpha=0.8, col ="grey") + 
-  # scale_x_continuous(limits=c(0,100)) +
-  # scale_y_continuous(limits=c(0,100)) +
-  # geom_abline(intercept=0,slope=1) +
-  # geom_smooth(se=0,method = "lm") +
-  # coord_fixed(1) +
-  ggtitle("LR")
-p12
-
-LR_RMSE <- sqrt(sum((pp_test$pred_mean.com-pp_test$mean.com)^2)/nrow(pp_test))
-LR_RMSE
+ 
 ```
 
 
 ```{r}
-for (i in 1:2541){#
-  for (j in 1:696){#
-    if (is.numeric(pp_test2[i,j]) == T){
-      pp_test2[i,j] <- as.numeric(pp_test2[i,j])
-    }
-    # else{
-    #   print("no")
-    # }
-  }
-  }
+ 
 ```
 
+## Stochastic Gradient Boosting
+
+```{r, include=FALSE}
+# From previous step
+tuneGrid <- data.frame(
+  .n.trees = 10000,
+  .interaction.depth = c(5,6,7),
+  .shrinkage = 0.01,
+  .n.minobsinnode = 5
+)
+
+# Fit random forest: model
+sgb_model <- train(
+  Price ~ .,
+  tuneLength = 1,
+  data = UCP_train, 
+  method = 'gbm',
+  tuneGrid = tuneGrid,
+  trControl = trainControl(
+    method = "cv", 
+    number = 10, 
+    verboseIter = FALSE
+  )
+)
+
+# Print model to console
+sgb_model
+plot(sgb_model)
+```

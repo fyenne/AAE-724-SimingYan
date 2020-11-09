@@ -1,0 +1,60 @@
+
+==============================================
+                                              	        Electricity Generated in 10k.kWh                      
+-------------------------------------------------------------------------------
+capacity                                                 		 3.586***               
+                                                       		 (0.022)                
+                                                                                
+year                                                     		 3.382***               
+                                                         		 (0.711)                
+                                                                                
+non_big_five: after_covid:  fossil-fuel                	-89.829***              
+                                                        		 (14.576)               
+                                                                                
+big_five:	     after_covid:  fossil-fuel               	-91.747***              
+                                                       		 (15.168)               
+                                                                                
+non_big_five:   bf_covid:    fossil-fuel                	-77.579***              
+                                                         		 (13.193)               
+                                                                                
+big_five:	       bf_covid:    fossil-fuel                	-59.530***              
+                                                         		 (13.424)               
+                                                                                
+non_big_five: after_covid:    hydro                     	-162.880***              
+                                                         		 (20.209)               
+                                                                                
+non_big_five:   bf_covid:      hydro                     	-172.910***              
+                                                       		 (14.049)                                  
+                                                                                
+non_big_five: after_covid: photovoltaic              	-81.128***              
+                                                         		(14.475)               
+                                                                                
+big_five:	     after_covid: photovoltaic               	-82.680***              
+                                                         		(15.604)               
+                                                                                
+non_big_five:   bf_covid: photovoltaic               	-75.313***              
+                                                         		(13.078)               
+                                                                                
+big_five:	       bf_covid: photovoltaic               	-75.705***              
+                                                         		(13.252)               
+                                                                                
+non_big_five: after_covid:    wind                       	-85.248***              
+                                                         		(15.093)               
+                                                                                
+big_five:	     after_covid:    wind                       	-83.961***              
+                                                         		(15.381)               
+                                                                                
+non_big_five:   bf_covid:      wind                       	-77.290***              
+                                                         		(12.731)               
+                                                                                
+big_five:	       bf_covid:      wind                       	-79.327***              
+                                                         		(13.027)               
+                                                                                
+Observations                                              	12,333                
+R2                                                        		 0.780                 
+Adjusted R2                                              	 0.779                 
+Residual Std. Error                                	       63.265 (df = 12317)          
+--------------------------------------------------------------------------------
+Notes:                                ***Significant at the 1 percent level.
+                                          **Significant at the 5 percent level. 
+                                          *Significant at the 10 percent level.  
