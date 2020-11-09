@@ -562,7 +562,7 @@ library(gt)
 library(DataExplorer)
  
 # two different way to creat naive model with interaction terms.
-reg1 <- felm(complete ~ capacity+ bf_covid + year| month + plant, 
+reg1 <- felm(complete ~ capacity+ bf_covid + year| month, 
              data = pp_data)
 (reg1 %>% summary)
 
@@ -580,27 +580,112 @@ reg2 <- felm(complete ~
              data = pp_data)
 (reg2 %>% summary)
 (reg1 %>% summary)
-mod_stargazer("../report/reg_1.text", reg1, type = "text", align = T, style = "aer")
+mod_stargazer("../report/reg_7.text", reg1, reg2, type = "text", align = T, style = "aer")
 mod_stargazer("../report/reg_2.text", reg2, type = "text", align = T, style = "aer")
 #--------------------------------------------
 pp_data$bf_covid <- as.factor(pp_data$bf_covid)
 pp_data %>% str
 reg_3 <- felm(complete ~ 
-                    capacity +
-                    year +
+                    # capacity +
+                    # year +
                     # city +
                     # factor(big_five) +
-                    # bf_covid + 
+                    # bf_covid +
                     # bf_covid:big_five + 
                     big_five:bf_covid:type_of_p - 1|
-                    # plant + month|
+                    # month|
                     0 , data = pp_data)
             # omit=c("big_five0:spr_festival1","big_five1:bf_covid1"))
+summary(reg_3)$coef 
+coeffi3_plot <- summary(reg_3)$coef %>% data.frame()
 #--------------------------------------------
-(reg_3 %>% summary)$coef
-mod_stargazer("../report/reg_3.text", reg_3, type = "text", align = T, style = "aer")
-
+coefplot::coefplot(reg_3)
+mod_stargazer("../report/reg_3_0.text", reg_3, type = "text", align = T, style = "aer")
 ```
+
+
+```{r}
+pp_data[which(pp_data$Hydro == "1"), ] %>% View()
+
+coeffi3_plot <- na.omit(coeffi3_plot)
+coeffi3_plot$rownames <- rownames(coeffi3_plot)
+grep("big_five0", coeffi3_plot$rownames) %>% as.vector() #3  5  7  8 10 12 13
+coeffi3_plot$big5 = "1"
+coeffi3_plot$big5[c(grep("big_five0", coeffi3_plot$rownames) %>% as.vector())] <- "0" 
+# coeffi3_plot <- coeffi3_plot[-c(1:2),]
+
+coeffi3_plot$type <- gsub(".{1,100}type_of_p", "", coeffi3_plot$rownames)
+# coeffi3_plot$type[1:2] <- "hydro"
+# coeffi3_plot$big5[1:2] <- '0'
+#--------------------------------------------
+
+coeffi3_plot$bf_covid = "1"
+grep("bf_covid0", coeffi3_plot$rownames) %>% as.vector()
+coeffi3_plot$bf_covid[c(grep("bf_covid0", coeffi3_plot$rownames) %>% as.vector())] <- "0" 
+
+coeffi3_plot$Estimate = coeffi3_plot$Estimate %>% round(3)
+coeffi3_plot = coeffi3_plot %>% mutate(bf_covid = ifelse(bf_covid == 1, "before_covid", "after_covid"))
+```
+
+```{r}
+ggthemr('light',type = 'outer')
+# coeffi3_plot$type
+p_coef <- ggplot(coeffi3_plot) + geom_col(position = "dodge") +
+  aes(x = big5, y = Estimate, group = type, fill = type) +
+  geom_text(aes(x = big5, y = Estimate, group = type, label = Estimate),
+            position = position_dodge2(width = 1 , preserve = "single"),
+            vjust = -.1,
+            size = 7) + 
+  facet_grid(rows = vars(bf_covid),
+             scales = "free",
+             space = "free")+  
+  theme(text = element_text(size =20),
+        plot.title = element_text(size = 25),
+        axis.text.x = element_text(angle = 0)) + 
+  labs(title  = "Coefficients value of model (3)",
+       x = "Ownership type of certain plants",
+       y = "Estimated electricity generation amount")
+  
+ p_coef
+  
+ggsave(filename = "../report/p_coef .png", plot = p_coef, width = 12)
+```
+```{r, warning =F, message =F}
+coeffi3_plot2 <- coeffi3_plot %>% select(bf_covid, big5, type,Estimate)
+diff_plot <- {}
+# coeffi3_plot2
+(coeffi3_plot2 %>% filter(big5 == 1))$Estimate[c(2,4,6)] - (coeffi3_plot2 %>% filter(big5 == 1))$Estimate[c(1,3,5)]
+(coeffi3_plot2 %>% filter(big5 == 0))$Estimate[c(2,4,6,8)] - (coeffi3_plot2 %>% filter(big5 == 0))$Estimate[c(1,3,5,7)]
+
+
+diff_plot$type = coeffi3_plot2$type %>% unique %>% data.frame()
+# diff_plot <- diff_plot %>% rbind(diff_plot) 
+diff_plot$dif_big5 <- c(79.361,0, -0.897,  1.523)
+diff_plot$dif_non5 <- c(34.514, -4.445, -1.045,  4.515)
+diff_plot <- diff_plot %>% data.frame()
+names(diff_plot)[1] = "type"
+
+diff_plot <- diff_plot %>% melt
+diff_plot
+# diff_plot <- mutate(diff_plot, ownertype = ifelse(variable == "dif_big5", ))
+p_coef_dif <- ggplot(diff_plot) + geom_col(position = "dodge") +
+  aes(x = type, y = value, fill = variable, group = variable) +
+  geom_text(aes(x = type, y = value, fill = variable, group = variable, label = value),
+            position = position_dodge2(width = .9 , preserve = "single"),
+            vjust = -.2,
+            size = 7)+
+  theme(text = element_text(size =20),
+        plot.title = element_text(size = 25),
+        axis.text.x = element_text(angle = 0)) + 
+  labs(title  = "Coefficients difference between pre-COVID and post-COVID time",
+       x = "Type of certain plants",
+       y = "Estimated electricity generation amount")
+  
+ # p_coef 
+  
+ggsave(filename = "../report/p_coef_dif.png", plot = p_coef_dif, width = 12)
+```
+
 
 
 #### 4.1 monthly fixed effect
