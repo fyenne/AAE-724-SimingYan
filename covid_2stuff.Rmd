@@ -1,0 +1,122 @@
+---
+title: "newstuffs"
+author: "Siming Yan"
+date:   "`r format(Sys.time(), '%d %B, %Y')`"
+output:
+  html_document:
+    theme: spacelab
+    keep_md: true
+    toc: yes
+    toc_float: true
+    highlight: haddock
+    
+---
+
+<html>
+<style> 
+div.bgm { background-color:#e6fff0; border-radius: 7px; padding: 10px;} 
+.ans {
+  color: purple;
+  font-weight: bold;
+}
+#main { 
+    color: #2cb061; 
+}
+</style>
+
+<div class = "bgm">
+
+<ul id="main">
+
+```{r setup, echo=FALSE, cache=FALSE, include = F}
+
+
+## Global options
+options(max.print="75",
+        warn =-100)
+ 
+options(digits=5)
+options(scipen=5)
+# knitr::opts_chunk$set(warning = F, message=F)
+
+```
+
+# read the data
+
+```{r}
+pp_new <- read.csv(file = "./real_pp_data_2.csv")
+# pp_new %>% dim
+```
+
+
+```{r}
+# pp_new$complete = pp_new$complete*10
+# pp_new$efficiency <- pp_new$complete/pp_new$capacity
+# pp_new %>% str
+# pp_new$efficiency %>% range
+
+
+# pp_new[grep("xingneng", pp_new$plant),]
+
+# write.csv(pp_new, "./rea_pp_data_3.csv", fileEncoding = "UTF-8")
+
+pp_new <- pp_new %>% filter( pp_new$type_of_p != "hydro")
+```
+
+```{r}
+reg1 <- felm(efficiency ~ on_covid + year + new_case| month, 
+             data = pp_new)
+(reg1 %>% summary)
+
+
+
+reg2 <- felm(complete ~ 
+               capacity +
+               # city +
+               year + 
+               on_covid +
+               new_case+
+               type_of_p+# delete this line would cause multi-insignificant. set fossil as baseline.
+               on_covid:type_of_p|
+               month |0,
+               # year + area3 + plant, 
+             data = pp_data_2)
+(reg2 %>% summary)
+(reg1 %>% summary)
+mod_stargazer("../report/reg_7.text", reg1, reg2, type = "text", align = T, style = "aer")
+mod_stargazer("../report/reg_2.text", reg2, type = "text", align = T, style = "aer")
+#--------------------------------------------
+```
+
+
+```{r}
+# pp_data$bf_covid <- as.factor(pp_data$bf_covid)
+# pp_data %>% str
+pp_data_2$type_of_p %>% unique
+# pp_data_2 <- within(pp_data_2, type_of_p <- relevel(type_of_p))
+
+contrasts(pp_data_2$type_of_p) <- contr.treatment(levels(pp_data_2$type_of_p),
+   base=which(levels(pp_data_2$type_of_p) == "fossil-fuel" ))
+
+
+reg_3 <- felm(complete ~ 
+                    capacity +
+                    year +
+                    # city +
+                    # big_five +
+                    # on_covid +
+                new_case+
+                    # bf_covid:big_five + 
+                    big_five:on_covid:type_of_p -1 |
+                    month|
+                    0 , data = pp_data_2)
+            # omit=c("big_five0:spr_festival1","big_five1:bf_covid1"))
+(summary(reg_3)$coef) %>% View
+# (summary(reg_3)$coef) %>% filter(grep()) %>% View
+coeffi3_plot <- summary(reg_3)$coef %>% data.frame()
+coeffi3_plot
+#--------------------------------------------
+coefplot::coefplot(reg_3)
+mod_stargazer("../report/reg_3_1.text", reg_3, type = "text", align = T, style = "aer")
+```
+

@@ -260,3 +260,82 @@ ggsave(filename = "./afre_el-gen_20.png", plot = afre_plt1, width = 12)
 # in_data, in_x, in_y, in_times, heading, heading_x,heading_y
 ```
 
+
+#--------------------------------------------
+
+
+```{r}
+shanxi2 <- read_html("http://www.shanxi.gov.cn/sj/dcsj/") 
+sxList <- shanxi2 %>% html_nodes('a') %>% html_attrs()
+# lapply(sxList, grep("山西", sxList))
+
+sxList
+
+shanxi2_read <- shanxi2 %>% html_nodes('.common-tab-content-box li') %>% html_text %>% data.frame
+shanxi2_read[grep(".月份", shanxi2_read[,1]),]
+
+
+CPI_shanxi <- data.frame(month = c(1:12))
+CPI_shanxi$year[1:12] = 19 
+CPI_shanxi <- rbind(CPI_shanxi,CPI_shanxi)
+CPI_shanxi$year = 20
+CPI_shanxi$CPI = c(1.8,1.6,2.5,2.7,2.9,2.8,3.0,2.4,2.2,3.2,3.8,3.8,
+                   5.2,5.2,4.3,3.3,2.9,3.3,0,0,0,0,0,0)
+```
+
+# a scraping to Econ index `r format(Sys.time(), '%d %B, %Y')` 
+<!-- "16 November, 2020" -->
+
+```{r}
+urls2 <- data.frame(1:20)
+for (i in 1:20){
+  urls2[i,] <- paste('http://www.shanxi.gov.cn/sj/jdsj/index_',
+                    i, 
+                    sep = "") %>% paste(".shtml", sep = "")
+}
+# urls[81, ] <- 'http://tjj.shanxi.gov.cn/sjjd/sxxx/index_93.html'
+
+#--------------------------------------------
+
+web_names0 <- data.frame(1:400, 1:400, 1:400)
+
+for (i in 1:20){
+  web_names0[(1+(20*(i-1))):(20*i), ] <- read_html(urls2[i, ]) %>% 
+                      html_nodes('.common-tab-content-box a') %>% 
+                      html_attrs() %>% 
+    data.frame() %>% 
+    transpose()
+  Sys.sleep(10)
+  # web_names1 <- mapply(c, web_names0, web_names)
+}
+
+
+
+# test <- urls2[3,] %>% read_html() %>% html_nodes('.common-tab-content-box a')
+# test %>% html_attrs() %>% data.frame()
+web_names1 <- web_names0[grep("经济指标完成情况",web_names0$X1.400.2),]
+web_names1$realnames <- paste0("http://www.shanxi.gov.cn/sj/jdsj/", gsub("[[:punct:]]{2}","",web_names1$X1.400), sep = "")
+
+```
+
+```{r}
+test <- read_html(web_names1$realnames[1]) %>% html_nodes("div.TRS_Editor img") %>% html_attrs()
+test[[1]][2] %>% as.vector 
+
+
+url_img <- substr(web_names1$realnames[1], 1, 40) %>% paste0(test[[1]][2] %>% as.vector)
+
+download.file(url_img,destfile="../report/econ/myimage.jpg", method='curl')
+
+# "http://www.shanxi.gov.cn/sj/jdsj/202007/" %>% nchar()    > 40
+```
+
+```{r}
+# install.packages('tesseract')
+library('tesseract')
+tesseract_info() #先查看是否有中文训练数据，如果没有，需要下载安装
+# tesseract_download("chi_tra")
+# tesseract_download("chi_sim")
+ocr("http://www.shanxi.gov.cn/sj/jdsj/202007/W020200721591759620953.png", engine = tesseract("chi_sim") ) %>% cat
+```
+
