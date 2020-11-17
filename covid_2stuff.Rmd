@@ -44,7 +44,7 @@ options(scipen=5)
 # read the data
 
 ```{r}
-pp_new <- read.csv(file = "./real_pp_data_2.csv")
+pp_new <- read.csv(file = "./rea_pp_data_3.csv")
 # pp_new %>% dim
 ```
 
@@ -52,39 +52,129 @@ pp_new <- read.csv(file = "./real_pp_data_2.csv")
 ```{r}
 # pp_new$complete = pp_new$complete*10
 # pp_new$efficiency <- pp_new$complete/pp_new$capacity
-# pp_new %>% str
-# pp_new$efficiency %>% range
-
-
-# pp_new[grep("xingneng", pp_new$plant),]
-
+# # pp_new %>% str
+# # pp_new$efficiency %>% range
+# 
+# pp_new <- pp_new %>% filter( pp_new$type_of_p != "hydro")
+# # pp_new[grep("xingneng", pp_new$plant),]
+# pp_new <- mutate(pp_new, on_covid = ifelse(bf_covid == "1", "0", "1"))
 # write.csv(pp_new, "./rea_pp_data_3.csv", fileEncoding = "UTF-8")
+#--------------------------------------------
 
-pp_new <- pp_new %>% filter( pp_new$type_of_p != "hydro")
+
+```
+
+#--------------------------------------------
+# adding econ variables/
+
+```{r}
+# shanxiGDP <- read_excel("shanxiGDP.xlsx")
+# names(shanxiGDP)[3] <- "area3"
+# shanxiGDP
+# # pp_new$g
+# pp_new <- merge(shanxiGDP, pp_new, by = c("area3", "year"), all =T)
+# # setdiff(pp_new$X, pp_new$X)
+# pp_new = pp_new[-which(is.na(pp_new$X)),]
+# 
+# pp_new$`GDP per capita` = pp_new$`GDP per capita`/10000
+```
+#--------------------------------------------
+# add lags
+
+```{r}
+pp_new2 <-  pp_new %>% filter(year != 16)
+pp_lag = pp_new
+pp_lag %>% filter(year == 16)
+
+for (i in 1:dim(pp_lag)[1]){
+  if (pp_lag$month[i] != 12){
+   pp_lag$month[i] = pp_lag$month[i] + 1 
+   # break
+  }
+  else{
+   pp_lag$month[i] = 1 
+   # break
+  }
+  }
+
+for (i in 1:dim(pp_lag)[1]){
+  if (pp_lag$month[i] == 1){
+   pp_lag$year[i] = pp_lag$year[i] + 1 
+  }
+  }
+
+pp_lag <- pp_lag %>% filter(year != 20 | year == 20 & month != 7)
+
+# pp_lag[which(pp_lag$year == 20),] 
+pp_lag %>% select(efficiency, plant, year, month)
+
+pp_lag_combine <- merge((pp_lag %>% select(efficiency, plant, year, month)), pp_new, 
+                        by = c("plant", "year", "month"))
+
+names(pp_lag_combine)[31] <- "efficiency"
+
+names(pp_lag_combine)[4] <- "efficiency_lag1"
+# pp_new[pp_new$X == 386,]
+pp_lag_combine$efficiency %>% range
+
+#--------------------------------------------
+
+pp_lag_combine_test = pp_lag_combine
+pp_lag_combine_test$efficiency = pp_lag_combine_test$efficiency/24/30
 ```
 
 ```{r}
-reg1 <- felm(efficiency ~ on_covid + year + new_case| month, 
-             data = pp_new)
+# capacity classification
+pp_lag_combine <- pp_lag_combine %>% mutate(capa_1 = ifelse(capacity < 30, "S",
+                                          ifelse(capacity >= 30 & capacity < 60, "M", "L")))
+```
+
+#--------------------------------------------
+
+
+```{r}
+reg1 <- felm(efficiency ~ 
+               # city +
+               on_covid + 
+               year +
+               new_case + 
+               `GDP.per.capita` + 
+               efficiency_lag1 + 
+               efficiency_lag1*on_covid +
+               efficiency_lag1*new_case|
+               month + area3|0|0, 
+             data = pp_lag_combine)
 (reg1 %>% summary)
 
 
+# tttest <- lm(efficiency ~ on_covid + year + new_case + `GDP per capita`, data = pp_new)
+felm(complete ~ on_covid + year + new_case |month|0|0,
+             data = pp_lag_combine)
+# lm(tttest$residuals~area3, pp_new) %>% summary
 
-reg2 <- felm(complete ~ 
-               capacity +
+
+
+reg2 <- felm(efficiency ~ 
+               # capacity +
                # city +
-               year + 
+               year +
                on_covid +
                new_case+
-               type_of_p+# delete this line would cause multi-insignificant. set fossil as baseline.
-               on_covid:type_of_p|
-               month |0,
+               `GDP.per.capita` +
+               efficiency_lag1 + 
+               type_of_p +# delete this line would cause multi-insignificant. set fossil as baseline.
+               on_covid:type_of_p +
+               new_case:type_of_p+
+             efficiency_lag1*on_covid +
+               efficiency_lag1*new_case|
+               month + area3|0|0,
                # year + area3 + plant, 
-             data = pp_data_2)
+             data = pp_lag_combine)
 (reg2 %>% summary)
 (reg1 %>% summary)
-mod_stargazer("../report/reg_7.text", reg1, reg2, type = "text", align = T, style = "aer")
-mod_stargazer("../report/reg_2.text", reg2, type = "text", align = T, style = "aer")
+getwd()
+mod_stargazer("../report2/reg_7.text", reg1, reg2, type = "text", align = T, style = "aer")
+mod_stargazer("../report2/reg_2.text", reg2, type = "text", align = T, style = "aer")
 #--------------------------------------------
 ```
 
@@ -92,31 +182,34 @@ mod_stargazer("../report/reg_2.text", reg2, type = "text", align = T, style = "a
 ```{r}
 # pp_data$bf_covid <- as.factor(pp_data$bf_covid)
 # pp_data %>% str
-pp_data_2$type_of_p %>% unique
+# pp_data_2$type_of_p %>% unique
 # pp_data_2 <- within(pp_data_2, type_of_p <- relevel(type_of_p))
+# 
+# contrasts(pp_data_2$type_of_p) <- contr.treatment(levels(pp_data_2$type_of_p),
+   # base=which(levels(pp_data_2$type_of_p) == "fossil-fuel" ))
+pp_lag_combine$big_five <- pp_lag_combine$big_five %>% as.factor()
 
-contrasts(pp_data_2$type_of_p) <- contr.treatment(levels(pp_data_2$type_of_p),
-   base=which(levels(pp_data_2$type_of_p) == "fossil-fuel" ))
-
-
-reg_3 <- felm(complete ~ 
-                    capacity +
-                    year +
-                    # city +
-                    # big_five +
-                    # on_covid +
+reg_3 <- felm(efficiency ~ 
+                    # capacity +
+                year +
                 new_case+
-                    # bf_covid:big_five + 
-                    big_five:on_covid:type_of_p -1 |
-                    month|
-                    0 , data = pp_data_2)
+                big_five +
+                on_covid +
+                new_case+
+                `GDP.per.capita` +
+                efficiency_lag1 + 
+                on_covid:big_five +
+                on_covid:type_of_p+
+                big_five:on_covid:type_of_p|
+                 area3 + month|
+                    0 , data = pp_lag_combine)
             # omit=c("big_five0:spr_festival1","big_five1:bf_covid1"))
-(summary(reg_3)$coef) %>% View
+(summary(reg_3))
 # (summary(reg_3)$coef) %>% filter(grep()) %>% View
 coeffi3_plot <- summary(reg_3)$coef %>% data.frame()
 coeffi3_plot
 #--------------------------------------------
 coefplot::coefplot(reg_3)
-mod_stargazer("../report/reg_3_1.text", reg_3, type = "text", align = T, style = "aer")
+mod_stargazer("../report2/reg_3_1.text", reg_3, type = "text", align = T, style = "aer")
 ```
 

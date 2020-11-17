@@ -597,7 +597,7 @@ library(DataExplorer)
  
 # two different way to creat naive model with interaction terms.
 reg1 <- felm(complete ~ capacity + on_covid + year + new_case| month, 
-             data = pp_data_2)
+             data = pp_lag_combine)
 (reg1 %>% summary)
 
 
