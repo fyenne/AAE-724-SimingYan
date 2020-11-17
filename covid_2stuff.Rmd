@@ -127,22 +127,99 @@ pp_lag_combine_test$efficiency = pp_lag_combine_test$efficiency/24/30
 # capacity classification
 pp_lag_combine <- pp_lag_combine %>% mutate(capa_1 = ifelse(capacity < 30, "S",
                                           ifelse(capacity >= 30 & capacity < 60, "M", "L")))
+
+# pp_lag_combine[which(pp_lag_combine$on_covid == 1),]$month %>% unique # 2-6 month
+pp_lag_combine$covid_lag1 = 0
+pp_lag_combine[which(pp_lag_combine$on_covid == 1),]$covid_lag1 = 1
+
+
+pp_lag_combine$year %>% unique
+
+spp_lag_combine[which(pp_lag_combine$yearmonth == "Jan 2020"),]$covid_lag1 = 0
+pp_lag_combine[which(pp_lag_combine$yearmonth == "Jun 2020"),]$covid_lag1 = 0
+pp_lag_combine[which(pp_lag_combine$yearmonth == "Jun 2020"),]$on_covid = 0
+pp_lag_combine[which(pp_lag_combine$yearmonth == "May 2020"),]$on_covid = 0
+pp_lag_combine[which(pp_lag_combine$yearmonth == "Jan 2020"),]$on_covid = "1"
+# pp_lag_combine[which(pp_lag_combine$on_covid == 1),]$month %>% unique
+
+pp_lag_combine$covid_lag1 = as.factor(pp_lag_combine$covid_lag1)
+pp_lag_combine$on_covid = as.factor(pp_lag_combine$on_covid)
+
+pp_lag_combine[which(pp_lag_combine$covid_lag1 == 1),]$yearmonth %>% unique
+
+pp_lag_combine$month = as.factor(pp_lag_combine$month)
+pp_lag_combine$year = as.factor(pp_lag_combine$year)
+
+#--------------------------------------------
+
+pp_lag_combine$capacity %>% range
+pp_lag_combine$complete %>% range
+pp_lag_combine = pp_lag_combine[-which(pp_lag_combine$complete<0),]
+# (pp_lag_combine$complete/pp_lag_combine$capacity) %>% range
+
+
+pp_lag_combine$year = pp_lag_combine$year %>% as.numeric()
+pp_lag_combine <- merge((pp_lag_combine %>% group_by(yearmonth) %>% summarise(mean(efficiency))), pp_lag_combine, by = "yearmonth")
+
+
+p_eff_sum <- gpt(pp_lag_combine) + 
+  aes(x = month, y = `sum(efficiency)`, group = year, color = year) + 
+  geom_line(size = 1.2L)
+
+ggsave(filename = "../report2/p_eff_sum.png", plot = p_eff_sum, width = 12)
+
+
+# ----
+# lag case 
+# pp_lag_combine$case_lag = 
+covid_sx_monthly$month = covid_sx_monthly$month + 1
+covid_sx_monthly$month[6] = 1
+names(covid_sx_monthly)[2] = "lag_case"
+
+covid_sx_monthly
+
+merge(covid_sx_monthly, pp_lag_combine, by = c("year", "month")) 
+pp_lag_combine$month= as.numeric(pp_lag_combine$month)
+
+for (i in 1:6){
+  if (pp_lag_combine$month == i & pp_lag_combine$year == 20){
+    pp_lag_combine$case_lag = covid_sx_monthly$lag_case[which(covid_sx_monthly$month==i)]
+  }
+  else {
+    pp_lag_combine$case_lag = 0
+  }
+}
+
+
+pp_lag_combine[which(pp_lag_combine$yearmonth == "Feb 2020"),]$case_lag = 39
+pp_lag_combine[which(pp_lag_combine$yearmonth == "Mar 2020"),]$case_lag = 94
+pp_lag_combine[which(pp_lag_combine$yearmonth == "Apr 2020"),]$case_lag = 3
+pp_lag_combine[which(pp_lag_combine$yearmonth == "May 2020"),]$case_lag = 61
+pp_lag_combine[which(pp_lag_combine$yearmonth == "Jun 2020"),]$case_lag = 1
+pp_lag_combine$case_lag %>% unique
+write.csv(pp_lag_combine, file = "../report2/random_test.csv")
 ```
 
 #--------------------------------------------
 
 
 ```{r}
+
+# pp_lag_combine[which(pp_lag_combine$on_covid == 1),] 
 reg1 <- felm(efficiency ~ 
                # city +
                on_covid + 
                year +
                new_case + 
                `GDP.per.capita` + 
-               efficiency_lag1 + 
-               efficiency_lag1*on_covid +
-               efficiency_lag1*new_case|
-               month + area3|0|0, 
+               covid_lag1+
+               case_lag+
+               # efficiency_lag1 +
+               # efficiency_lag1*on_covid +
+               # efficiency_lag1*new_case|
+               covid_lag1:on_covid +
+               new_case:case_lag|
+               month|0|0, 
              data = pp_lag_combine)
 (reg1 %>% summary)
 
@@ -159,15 +236,19 @@ reg2 <- felm(efficiency ~
                # city +
                year +
                on_covid +
-               new_case+
+               new_case +
+               covid_lag1 +
+               case_lag+
                `GDP.per.capita` +
-               efficiency_lag1 + 
+               # efficiency_lag1 + 
                type_of_p +# delete this line would cause multi-insignificant. set fossil as baseline.
                on_covid:type_of_p +
                new_case:type_of_p+
-             efficiency_lag1*on_covid +
-               efficiency_lag1*new_case|
-               month + area3|0|0,
+               covid_lag1:on_covid +
+               new_case:case_lag|
+               # efficiency_lag1*on_covid +
+               # efficiency_lag1*new_case|
+               month|0|0,
                # year + area3 + plant, 
              data = pp_lag_combine)
 (reg2 %>% summary)
@@ -192,16 +273,22 @@ pp_lag_combine$big_five <- pp_lag_combine$big_five %>% as.factor()
 reg_3 <- felm(efficiency ~ 
                     # capacity +
                 year +
-                new_case+
+                new_case +
                 big_five +
                 on_covid +
-                new_case+
+                # new_case +
+                type_of_p + 
+                case_lag+
+                covid_lag1+
                 `GDP.per.capita` +
-                efficiency_lag1 + 
+                new_case:type_of_p + 
+                new_case:big_five+
                 on_covid:big_five +
                 on_covid:type_of_p+
+               covid_lag1:on_covid +
+               new_case:case_lag +
                 big_five:on_covid:type_of_p|
-                 area3 + month|
+                month|
                     0 , data = pp_lag_combine)
             # omit=c("big_five0:spr_festival1","big_five1:bf_covid1"))
 (summary(reg_3))
@@ -213,3 +300,72 @@ coefplot::coefplot(reg_3)
 mod_stargazer("../report2/reg_3_1.text", reg_3, type = "text", align = T, style = "aer")
 ```
 
+
+# plant name losage
+
+```{r}
+setdiff(pp_lag_combine[which(pp_lag_combine$year == 20 & pp_lag_combine$month == 1),]$plant, 
+        pp_lag_combine[which(pp_lag_combine$year == 19 & pp_lag_combine$month == 12),]$plant) #12 
+# setdiff(pp_lag_combine[which(pp_lag_combine$year == 19 & pp_lag_combine$month == 12),]$plant, 
+        # pp_lag_combine[which(pp_lag_combine$year == 20 & pp_lag_combine$month == 1),]$plant)
+
+setdiff(pp_lag_combine[which(pp_lag_combine$year == 20 & pp_lag_combine$month == 1),]$plant, 
+        pp_lag_combine[which(pp_lag_combine$year == 20 & pp_lag_combine$month == 2),]$plant)   # 21 10   12 2  23 4  34 1 
+
+setdiff(pp_lag_combine[which(pp_lag_combine$year == 20 & pp_lag_combine$month == 3),]$plant, 
+        pp_lag_combine[which(pp_lag_combine$year == 20 & pp_lag_combine$month == 4),]$plant)  # 32  0 #43 4 # 54 2 # 65 3 
+
+# pp_lag_combine$yearmonth[1] %>% mdy() %>% substr(1,7)
+
+# pp_lag_combine[which(pp_lag_combine$year == 19 & pp_lag_combine$month == 12),]$plant
+
+data.frame(monthrange = c("Dec_to_Jan","Jan_to_Feb", "Feb_to_Mar", "Mar_to_Apr", "Apr_to_May"), numbers = c(11, 8, -4, 3))
+
+
+
+
+
+setdiff(pp_lag_combine[which(pp_lag_combine$year == 20 ),]$plant, 
+        pp_lag_combine[which(pp_lag_combine$year == 19),]$plant) # 27 new in 20
+
+setdiff(pp_lag_combine[which(pp_lag_combine$year == 19 ),]$plant, 
+        pp_lag_combine[which(pp_lag_combine$year == 20),]$plant) # 5 lost
+
+setdiff(pp_lag_combine[which(pp_lag_combine$year == 18 ),]$plant, 
+        pp_lag_combine[which(pp_lag_combine$year == 19),]$plant) # 103 increase
+setdiff(pp_lag_combine[which(pp_lag_combine$year == 19 ),]$plant,               # 45 up 18-19
+        pp_lag_combine[which(pp_lag_combine$year == 18),]$plant) # 58 lost 
+
+
+setdiff(pp_lag_combine[which(pp_lag_combine$year == 18 ),]$plant, 
+        pp_lag_combine[which(pp_lag_combine$year == 17),]$plant) # 75+57 lose  132
+setdiff(pp_lag_combine[which(pp_lag_combine$year == 17 ),]$plant, 
+        pp_lag_combine[which(pp_lag_combine$year == 18),]$plant) # 4 increase 
+
+```
+
+
+
+'
+```{r}
+summary(reg_3)
+re3_plot <- ((summary(reg_3))$coef[,] %>% as.data.frame())[18:21,]
+re3_plot$rownames = rownames(re3_plot)
+re3_plot <- re3_plot %>% separate(rownames, into = c("big5", "on_covid", "type"), sep = "\\:")
+rownames(re3_plot)
+re3_plot
+re3_plotlot <-  gpt(re3_plot) + 
+  aes(x = type, y = Estimate, group = type, fill = type) + 
+  facet_grid(cols = vars(on_covid),
+             scales = "free",
+             space = "free")+
+   geom_col()  + 
+   geom_text(aes(x = type, y = Estimate, label = Estimate %>% round(3)),
+            vjust = -0.3) +
+  theme(text = element_text(size =20),
+        plot.title = element_text(size = 25),
+        axis.text.x = element_text(angle = 0)) + 
+  labs(title  = "Coefficients value of model (3) (part)")
+
+ggsave(filename = "../report2/reg3.png", plot = re3_plotlot, width = 12)
+```
