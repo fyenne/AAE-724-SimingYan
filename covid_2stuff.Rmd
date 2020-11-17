@@ -281,8 +281,12 @@ reg_3 <- felm(efficiency ~
                 case_lag+
                 covid_lag1+
                 `GDP.per.capita` +
+<<<<<<< HEAD
                 new_case:type_of_p + 
                 new_case:big_five+
+=======
+                # efficiency_lag1 + 
+>>>>>>> c91eda0a26528ac8c431ccd415c62ddbf9b9a895
                 on_covid:big_five +
                 on_covid:type_of_p+
                covid_lag1:on_covid +
@@ -342,6 +346,7 @@ setdiff(pp_lag_combine[which(pp_lag_combine$year == 18 ),]$plant,
 setdiff(pp_lag_combine[which(pp_lag_combine$year == 17 ),]$plant, 
         pp_lag_combine[which(pp_lag_combine$year == 18),]$plant) # 4 increase 
 
+<<<<<<< HEAD
 ```
 
 
@@ -369,3 +374,6 @@ re3_plotlot <-  gpt(re3_plot) +
 
 ggsave(filename = "../report2/reg3.png", plot = re3_plotlot, width = 12)
 ```
+=======
+```
+>>>>>>> c91eda0a26528ac8c431ccd415c62ddbf9b9a895
