@@ -613,11 +613,6 @@ ggsave(filename = "./el-gen-type_of_p2.png", plot = p4, width = 12)
 
 
 ```{r}
-pp_data <- mutate(pp_data, type_of_p = 
-                       ifelse(wind == "1", "wind", 
-                              ifelse(Hydro == "1", "hydro", 
-                                     ifelse(Fossil.fuel == "1", "fossil-fuel", "photovoltaic")
-)))
 
 
 
@@ -650,14 +645,14 @@ p5 <- ggplot(pp_area_p5) +
         axis.text.x = element_text(angle = 0)) + 
   labs(title  = "Mean Electricity Generating by Type_of_plant",
        x = "Month",
-       y = "Mean electricity generated (Gwh)")+
+       y = "Mean electricity generated (10k kwh)")+
   geom_text(aes(x = type_of_p, y = `mean(complete)`, label = `mean(complete)`, group = big_five),
             position = position_dodge2(width = .82 , preserve = "single"),
             vjust = -.3,
             angle = 0,
             size = 6) +
   scale_fill_brewer(palette = "Set3")
-# p5
+p5
 
 #--------------------------------------------
 p6 <- ggplot(pp_area_p5) +

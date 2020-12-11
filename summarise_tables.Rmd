@@ -137,7 +137,8 @@ ggthemr('light',type = 'outer')
 ```
 
 ```{r, include=F}
-pp_data <- read.csv("./pp_data_real.csv")
+pp_data <- read.csv("./pp_data_real1.csv")
+# pp_data$
 ```
 
 #--------------------------------------------
@@ -157,7 +158,7 @@ library(qwraps2)
 #--------------------------------------------
 
 # type_of_p
-our_summary1 <-
+our_summary1 <- 
   list("Plant" =
        list("Unique Names of Plants" = ~ length(unique(plant))),
       "Electricity generated per month" =
@@ -256,11 +257,11 @@ our_summary3 <-
             "Owned"     = ~ sum(big_five))
 )
 
-st3 <- summary_table(group_by(pp_data_unique, city), our_summary3) %>%
-  kbt %>%
-  add_header_above(header = c("Plants Level Summary over City Type" = 3), bold = T , font_size = 18)
-# save_kable(st3, file = "../report/table_3.png", keep_tex = T, zoom = 4)
-st3
+# st3 <- summary_table(group_by(pp_data_unique, city), our_summary3) %>%
+#   kbt %>%
+#   add_header_above(header = c("Plants Level Summary over City Type" = 3), bold = T , font_size = 18)
+# # save_kable(st3, file = "../report/table_3.png", keep_tex = T, zoom = 4)
+# st3
 #--------------------------------------------
 
 # area3
@@ -304,19 +305,19 @@ st_options(plain.ascii = FALSE)
 
 ```{r, echo = F}
 # print(dfSummary(tobacco, graph.magnif = 0.75))
-pp_data[, -c(1,2,3,6,7,8,9,10,11,12,13, 14, 20, 21)] %>% str
-mcor <- cor(pp_data[, -c(1,2,3,6,7,8,9,10,11,12,13, 14,19,20, 21)])
-upper <- mcor
-
-upper[upper.tri(mcor)] <- "" 
-upper <- data.frame(upper)
-
-library(xtable)
-xtable <- xtable(upper) %>% data.frame()
-
-st5 <- xtable(upper) %>% kbt %>%
-  add_header_above(header = c("Variable correlations" = 9), bold = T, font_size = 18)
-st5 
+# pp_data[, -c(1,2,3,6,7,8,9,10,11,12,13, 14, 20, 21)] %>% str
+# mcor <- cor(pp_data[, -c(1,2,3,6,7,8,9,10,11,12,13, 14,19,20, 21)])
+# upper <- mcor
+# 
+# upper[upper.tri(mcor)] <- "" 
+# upper <- data.frame(upper)
+# 
+# library(xtable)
+# xtable <- xtable(upper) %>% data.frame()
+# 
+# st5 <- xtable(upper) %>% kbt %>%
+#   add_header_above(header = c("Variable correlations" = 9), bold = T, font_size = 18)
+# st5 
 
 # save_kable(st5, file = "../report/table_5.png", keep_tex = T, zoom = 4)
 # print(xtable(upper), type = "html", method = "render")

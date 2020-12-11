@@ -44,50 +44,89 @@ options(scipen=5)
 # read the data
 
 ```{r}
-pp_new <- read.csv(file = "./rea_pp_data_3.csv")
+pp_new <- read.csv(file = "./real_pp_data_2.csv")
 # pp_new %>% dim
 ```
 
 
 ```{r}
+pp_new$efficiency
+# pp_new$complete %>% View
 # pp_new$complete = pp_new$complete*10
-# pp_new$efficiency <- pp_new$complete/pp_new$capacity
-# # pp_new %>% str
-# # pp_new$efficiency %>% range
-# 
-# pp_new <- pp_new %>% filter( pp_new$type_of_p != "hydro")
+pp_new$efficiency <- pp_new$complete/pp_new$capacity/30/24
+
+# which(is.na(pp_new$efficiency))c
+pp_new <- pp_new[-12585,]
+pp_new <- pp_new %>% filter( pp_new$type_of_p != "hydro")
 # # pp_new[grep("xingneng", pp_new$plant),]
-# pp_new <- mutate(pp_new, on_covid = ifelse(bf_covid == "1", "0", "1"))
-# write.csv(pp_new, "./rea_pp_data_3.csv", fileEncoding = "UTF-8")
+pp_new <- mutate(pp_new, on_covid = ifelse(bf_covid == "1", "0", "1"))
+write.csv(pp_new, "./rea_pp_data_3.csv", fileEncoding = "UTF-8")
 #--------------------------------------------
 
+# EFFICEINcy adjustment. 
+pp_new$efficiency %>% as.numeric() %>% View
 
+pp_new[12002,] #jianlongdianchang
+pp_new[which(pp_new$plant_1 == "jianlongdianchang"),]$capacity = 20
+
+pp_new[8648,] 
+pp_new[which(pp_new$plant_1 == "guangyudianchang"),]$capacity = 97
+	# guangyudianchang
+
+pp_new[5145,] 
+pp_new[which(pp_new$plant_1 == "huilongtaredian"),]$capacity = max(pp_new[which(pp_new$plant_1 == "huilongtaredian"),]$capacity)
+# max(pp_new[which(pp_new$plant_1 == "huilongtaredian"),]$capacity)
+# 5145
+# 1.31786
+pp_new[6492,]
+pp_new[which(pp_new$plant_1 == "lianchengfengdianchang"),]$capacity = 9.9
+# max(pp_new[which(pp_new$plant_1 == "lianchengfengdianchang"),]$capacity)
+# 1.30752
+# 6701
+# 1.11953
+# 5229
+# 1.06111
+#--------------------------------------------
+
+pp_new[2691,]
+pp_new[which(pp_new$plant_1 == "sihemeicengqi"),]$capacity = 14
+#傻逼行为, 下次别删数据了
+
+# 1.00116
+pp_new$efficiency <- pp_new$complete/pp_new$capacity/30/24
 ```
 
 #--------------------------------------------
 # adding econ variables/
 
 ```{r}
-# shanxiGDP <- read_excel("shanxiGDP.xlsx")
-# names(shanxiGDP)[3] <- "area3"
-# shanxiGDP
-# # pp_new$g
-# pp_new <- merge(shanxiGDP, pp_new, by = c("area3", "year"), all =T)
+shanxiGDP <- read_excel("shanxiGDP.xlsx")
+names(shanxiGDP)[3] <- "area3"
+shanxiGDP
+
+# pp_new$generated_el
+pp_new <- merge(shanxiGDP, pp_new, by = c("area3", "year"), all =T)
 # # setdiff(pp_new$X, pp_new$X)
 # pp_new = pp_new[-which(is.na(pp_new$X)),]
 # 
 # pp_new$`GDP per capita` = pp_new$`GDP per capita`/10000
+
+pp_new[which(pp_new$year == 20),]$month %>% as.numeric()
 ```
 #--------------------------------------------
 # add lags
 
 ```{r}
-pp_new2 <-  pp_new %>% filter(year != 16)
+pp_new2 <-  pp_new %>% filter(year != 16) # 后置位数据集
+#--------------------------------------------
+
 pp_lag = pp_new
-pp_lag %>% filter(year == 16)
+pp_lag %>% filter(year == 16)# 前置位数据
+
+#--------------------------------------------
 
 for (i in 1:dim(pp_lag)[1]){
-  if (pp_lag$month[i] != 12){
+  if (isTRUE(pp_lag$month[i] != 12) == T){
    pp_lag$month[i] = pp_lag$month[i] + 1 
    # break
   }
@@ -98,20 +137,23 @@ for (i in 1:dim(pp_lag)[1]){
   }
 
 for (i in 1:dim(pp_lag)[1]){
-  if (pp_lag$month[i] == 1){
+  if (isTRUE(pp_lag$month[i] == 1)){
    pp_lag$year[i] = pp_lag$year[i] + 1 
   }
   }
+pp_lag 
 
-pp_lag <- pp_lag %>% filter(year != 20 | year == 20 & month != 7)
+#--------------------------------------------
+
+pp_lag <- pp_lag %>% filter(year != 20 | (year == 20 & month != 7))
 
 # pp_lag[which(pp_lag$year == 20),] 
-pp_lag %>% select(efficiency, plant, year, month)
+pp_lag %>% select(efficiency, plant_1, year, month)
 
-pp_lag_combine <- merge((pp_lag %>% select(efficiency, plant, year, month)), pp_new, 
-                        by = c("plant", "year", "month"))
-
-names(pp_lag_combine)[31] <- "efficiency"
+pp_lag_combine <- merge((pp_lag %>% select(efficiency, plant_1, year, month)), pp_new, 
+                        by = c("plant_1", "year", "month"))
+pp_lag_combine
+names(pp_lag_combine)[26] <- "efficiency"
 
 names(pp_lag_combine)[4] <- "efficiency_lag1"
 # pp_new[pp_new$X == 386,]
@@ -119,14 +161,14 @@ pp_lag_combine$efficiency %>% range
 
 #--------------------------------------------
 
-pp_lag_combine_test = pp_lag_combine
-pp_lag_combine_test$efficiency = pp_lag_combine_test$efficiency/24/30
+# pp_lag_combine_test = pp_lag_combine
+# pp_lag_combine_test$efficiency = pp_lag_combine_test$efficiency/24/30
 ```
 
 ```{r}
 # capacity classification
-pp_lag_combine <- pp_lag_combine %>% mutate(capa_1 = ifelse(capacity < 30, "S",
-                                          ifelse(capacity >= 30 & capacity < 60, "M", "L")))
+# pp_lag_combine <- pp_lag_combine %>% mutate(capa_1 = ifelse(capacity < 30, "S",
+#                                           ifelse(capacity >= 30 & capacity < 60, "M", "L")))
 
 # pp_lag_combine[which(pp_lag_combine$on_covid == 1),]$month %>% unique # 2-6 month
 pp_lag_combine$covid_lag1 = 0
@@ -135,7 +177,7 @@ pp_lag_combine[which(pp_lag_combine$on_covid == 1),]$covid_lag1 = 1
 
 pp_lag_combine$year %>% unique
 
-spp_lag_combine[which(pp_lag_combine$yearmonth == "Jan 2020"),]$covid_lag1 = 0
+pp_lag_combine[which(pp_lag_combine$yearmonth == "Jan 2020"),]$covid_lag1 = 0
 pp_lag_combine[which(pp_lag_combine$yearmonth == "Jun 2020"),]$covid_lag1 = 0
 pp_lag_combine[which(pp_lag_combine$yearmonth == "Jun 2020"),]$on_covid = 0
 pp_lag_combine[which(pp_lag_combine$yearmonth == "May 2020"),]$on_covid = 0
@@ -161,14 +203,17 @@ pp_lag_combine = pp_lag_combine[-which(pp_lag_combine$complete<0),]
 pp_lag_combine$year = pp_lag_combine$year %>% as.numeric()
 pp_lag_combine <- merge((pp_lag_combine %>% group_by(yearmonth) %>% summarise(mean(efficiency))), pp_lag_combine, by = "yearmonth")
 
-
+pp_lag_combine$year = pp_lag_combine$year %>% as.factor()
 p_eff_sum <- gpt(pp_lag_combine) + 
-  aes(x = month, y = `sum(efficiency)`, group = year, color = year) + 
+  aes(x = month, y = `mean(efficiency)`, group = year, color = year) + 
   geom_line(size = 1.2L)
 
 ggsave(filename = "../report2/p_eff_sum.png", plot = p_eff_sum, width = 12)
+p_eff_sum
+```
 
 
+```{r}
 # ----
 # lag case 
 # pp_lag_combine$case_lag = 
@@ -204,22 +249,20 @@ write.csv(pp_lag_combine, file = "../report2/random_test.csv")
 
 
 ```{r}
-
+pp_lag_combine$efficiency_lag1 %>% range
+# pp_lag_combine$efficiency <- pp_lag_combine$efficiency/30/24
+# pp_lag_combine$efficiency_lag1 <- pp_lag_combine$efficiency_lag1/30/24
+# pp_lag_combine$efficiency <- pp_lag_combine$efficiency * 100 
+# pp_lag_combine$efficiency_lag1 <- pp_lag_combine$efficiency_lag1*100
 # pp_lag_combine[which(pp_lag_combine$on_covid == 1),] 
+pp_lag_combine$`GDP per capita`
 reg1 <- felm(efficiency ~ 
-               # city +
-               on_covid + 
-               year +
-               new_case + 
-               `GDP.per.capita` + 
+               on_covid +
+               new_case +
+               `GDP per capita` +
                covid_lag1+
-               case_lag+
-               # efficiency_lag1 +
-               # efficiency_lag1*on_covid +
-               # efficiency_lag1*new_case|
-               covid_lag1:on_covid +
-               new_case:case_lag|
-               month|0|0, 
+               covid_lag1:on_covid|
+               year + month|0|plant_1 + yearmonth, 
              data = pp_lag_combine)
 (reg1 %>% summary)
 
@@ -234,29 +277,31 @@ felm(complete ~ on_covid + year + new_case |month|0|0,
 reg2 <- felm(efficiency ~ 
                # capacity +
                # city +
-               year +
+              
                on_covid +
                new_case +
                covid_lag1 +
-               case_lag+
-               `GDP.per.capita` +
+               # case_lag+
+               `GDP per capita` +
                # efficiency_lag1 + 
                type_of_p +# delete this line would cause multi-insignificant. set fossil as baseline.
                on_covid:type_of_p +
                new_case:type_of_p+
-               covid_lag1:on_covid +
-               new_case:case_lag|
+               covid_lag1:on_covid|
                # efficiency_lag1*on_covid +
                # efficiency_lag1*new_case|
-               month|0|0,
+                year + month|0|plant_1 + yearmonth,
                # year + area3 + plant, 
              data = pp_lag_combine)
 (reg2 %>% summary)
-(reg1 %>% summary)
+# (reg1 %>% summary)
 getwd()
 mod_stargazer("../report2/reg_7.text", reg1, reg2, type = "text", align = T, style = "aer")
 mod_stargazer("../report2/reg_2.text", reg2, type = "text", align = T, style = "aer")
 #--------------------------------------------
+```
+```{r}
+# summary(pp_lag_combine$efficiency)
 ```
 
 
@@ -281,12 +326,12 @@ reg_3 <- felm(efficiency ~
                 case_lag+
                 covid_lag1+
                 `GDP.per.capita` +
-<<<<<<< HEAD
+
                 new_case:type_of_p + 
                 new_case:big_five+
-=======
+
                 # efficiency_lag1 + 
->>>>>>> c91eda0a26528ac8c431ccd415c62ddbf9b9a895
+
                 on_covid:big_five +
                 on_covid:type_of_p+
                covid_lag1:on_covid +
@@ -346,7 +391,32 @@ setdiff(pp_lag_combine[which(pp_lag_combine$year == 18 ),]$plant,
 setdiff(pp_lag_combine[which(pp_lag_combine$year == 17 ),]$plant, 
         pp_lag_combine[which(pp_lag_combine$year == 18),]$plant) # 4 increase 
 
-<<<<<<< HEAD
+qp <- data.frame("17-18" = c(132, 4), "18-19" = c(103, 58), "19-20" = c(27,5))
+qp[3,] = names(qp)
+qp
+qp <- qp %>% transpose
+qp[4:6, 1:3] = 0
+qp$V1[4:6] = qp$V2
+qp$V2 =c("increased","increased","increased","decreased" %>% rep(3))
+qp$V3[4:6] = qp$V3[1:3]
+# qp
+qp$V1 = qp$V1 %>% as.numeric()
+qpp <- gpt(qp)+
+  aes(x = V3, weight = V1, group = V2, fill = V2) + 
+  geom_bar(position = "dodge") + 
+  geom_text(aes(x = V3, y = V1, group = V2, label = V1),
+            position = position_dodge2(width = 1 , preserve = "single"),
+            # hjust = 1,
+            vjust = .1,
+            size = 7) + 
+   theme(text = element_text(size =20),
+        plot.title = element_text(size = 25),
+        axis.text.x = element_text(angle = 0)) + 
+  labs(x = "year change from-to-",
+       y = "Number of plants' changes")
+qpp 
+ggsave("../report/qpp.png", plot = qpp, width = 12)
+  # getwd()
 ```
 
 
@@ -374,6 +444,52 @@ re3_plotlot <-  gpt(re3_plot) +
 
 ggsave(filename = "../report2/reg3.png", plot = re3_plotlot, width = 12)
 ```
-=======
+
+
+
+```{r}
+covid$date %>% max()
+asidjij <- covid %>% filter(type == "confirmed") %>% group_by(province) %>% summarise(sum(cases)) 
+asidjij[(order(asidjij$`sum(cases)`)),]
 ```
->>>>>>> c91eda0a26528ac8c431ccd415c62ddbf9b9a895
+
+
+
+```{r}
+#this is for identifying complete~gdp_per_capita in 16-19
+# cgdp$area3
+cgdp <- (pp_lag_combine %>% filter(year < 20))
+cgdp %>% names()
+cgdp$GDP.per.capita
+
+cgdp$efficiency = cgdp$efficiency/30/24
+cgdp$GDP.per.capita <- cgdp$GDP.per.capita / 1000
+felm(GDP.per.capita ~ complete |yearmon, cgdp) %>% summary
+felm(GDP.per.capita ~ efficiency |yearmon, cgdp) %>% summary
+```
+
+```{r}
+# pp_lag_combine$year
+# pp_lag_combine %>% names
+pcount <- pp_lag_combine %>% group_by(yearmonth) %>% summarise(unique(plant) %>% length)
+pcount$year <- substr(pcount$yearmonth, 4,8) %>% as.numeric()
+# pcount$month <- 
+pcount$month <- match(substr(pcount$yearmonth, 1,3), month.abb)
+pcount[order(pcount$year, pcount$month),]
+
+
+grep("Sep",pp_data_test$yearmonth , value = T) %>% unique
+
+which(pp_lag_combine$yearmonth == "Sep 2017")
+```
+
+```{r}
+pp_data0 <- read.csv("PP_data.csv")
+# pp_data0[which(pp_data0$month == 9), ]$year
+grep("Sep", pp_data0$yearmonth, value = T) %>% unique
+```
+
+```{r}
+
+```
+
