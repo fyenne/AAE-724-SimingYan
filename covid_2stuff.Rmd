@@ -206,10 +206,14 @@ pp_lag_combine <- merge((pp_lag_combine %>% group_by(yearmonth) %>% summarise(me
 pp_lag_combine$year = pp_lag_combine$year %>% as.factor()
 p_eff_sum <- gpt(pp_lag_combine) + 
   aes(x = month, y = `mean(efficiency)`, group = year, color = year) + 
-  geom_line(size = 1.2L)
-
-ggsave(filename = "../report2/p_eff_sum.png", plot = p_eff_sum, width = 12)
+  scale_x_continuous(n.breaks = 12)  + 
+  geom_line(size = 1.2L) + 
+  theme(text = element_text(size = 22),
+        plot.title = element_text(size = 25))
 p_eff_sum
+
+ggsave(filename = "../report2/p_eff_mean.png", plot = p_eff_sum, width = 12)
+
 ```
 
 
@@ -248,58 +252,6 @@ write.csv(pp_lag_combine, file = "../report2/random_test.csv")
 #--------------------------------------------
 
 
-```{r}
-pp_lag_combine$efficiency_lag1 %>% range
-# pp_lag_combine$efficiency <- pp_lag_combine$efficiency/30/24
-# pp_lag_combine$efficiency_lag1 <- pp_lag_combine$efficiency_lag1/30/24
-# pp_lag_combine$efficiency <- pp_lag_combine$efficiency * 100 
-# pp_lag_combine$efficiency_lag1 <- pp_lag_combine$efficiency_lag1*100
-# pp_lag_combine[which(pp_lag_combine$on_covid == 1),] 
-pp_lag_combine$`GDP per capita`
-reg1 <- felm(efficiency ~ 
-               on_covid +
-               new_case +
-               `GDP per capita` +
-               covid_lag1+
-               covid_lag1:on_covid|
-               year + month|0|plant_1 + yearmonth, 
-             data = pp_lag_combine)
-(reg1 %>% summary)
-
-
-# tttest <- lm(efficiency ~ on_covid + year + new_case + `GDP per capita`, data = pp_new)
-felm(complete ~ on_covid + year + new_case |month|0|0,
-             data = pp_lag_combine)
-# lm(tttest$residuals~area3, pp_new) %>% summary
-
-
-
-reg2 <- felm(efficiency ~ 
-               # capacity +
-               # city +
-              
-               on_covid +
-               new_case +
-               covid_lag1 +
-               # case_lag+
-               `GDP per capita` +
-               # efficiency_lag1 + 
-               type_of_p +# delete this line would cause multi-insignificant. set fossil as baseline.
-               on_covid:type_of_p +
-               new_case:type_of_p+
-               covid_lag1:on_covid|
-               # efficiency_lag1*on_covid +
-               # efficiency_lag1*new_case|
-                year + month|0|plant_1 + yearmonth,
-               # year + area3 + plant, 
-             data = pp_lag_combine)
-(reg2 %>% summary)
-# (reg1 %>% summary)
-getwd()
-mod_stargazer("../report2/reg_7.text", reg1, reg2, type = "text", align = T, style = "aer")
-mod_stargazer("../report2/reg_2.text", reg2, type = "text", align = T, style = "aer")
-#--------------------------------------------
-```
 ```{r}
 # summary(pp_lag_combine$efficiency)
 ```
@@ -471,25 +423,249 @@ felm(GDP.per.capita ~ efficiency |yearmon, cgdp) %>% summary
 ```{r}
 # pp_lag_combine$year
 # pp_lag_combine %>% names
-pcount <- pp_lag_combine %>% group_by(yearmonth) %>% summarise(unique(plant) %>% length)
+pcount <- pp_lag_combine %>% group_by(yearmonth) %>% summarise(unique(plant_1) %>% length)
 pcount$year <- substr(pcount$yearmonth, 4,8) %>% as.numeric()
 # pcount$month <- 
 pcount$month <- match(substr(pcount$yearmonth, 1,3), month.abb)
-pcount[order(pcount$year, pcount$month),]
+pcount <- pcount[order(pcount$year, pcount$month),]
 
 
-grep("Sep",pp_data_test$yearmonth , value = T) %>% unique
+# grep("Sep",pp_data_test$yearmonth , value = T) %>% unique
 
-which(pp_lag_combine$yearmonth == "Sep 2017")
+# which(pp_lag_combine$yearmonth == "Sep 2017")
 ```
 
 ```{r}
-pp_data0 <- read.csv("PP_data.csv")
+# pp_data0 <- read.csv("PP_data.csv")
 # pp_data0[which(pp_data0$month == 9), ]$year
-grep("Sep", pp_data0$yearmonth, value = T) %>% unique
+# grep("Sep", pp_data0$yearmonth, value = T) %>% unique
+```
+
+```{r}
+names(pcount)[2] = "num_p"
+pcount$year = pcount$year -2000
+pp_lag_combine <- merge(pcount, pp_lag_combine, by = c("yearmonth","year",  "month"))
+pp_lag_combine
+pp_lag_combine$year = pp_lag_combine$year %>% as.numeric + 16
+pp_lag_combine$year <- pp_lag_combine$year %>% as.factor()
+
+
+unique((pp_data %>% filter(year == 16))$plant) %>% length #211
+
+# dim(pcount)[1]
+# pcount$new_p = 0
+for (i in 2:dim(pcount)[1]){
+  pcount$new_p[i] = pcount$num_p[i] - pcount$num_p[i-1]
+}
+
+# pcount = pcount[,!names(pcount) %in% c("los_p")]
+pcount
+pp_lag_combine <- merge(pcount, pp_lag_combine, by = c("yearmonth","year",  "month", "num_p"))
+pp_lag_combine$yearmonth %>% unique
+```
+
+
+```{r}
+pp_lag_combine$efficiency_lag1 %>% range
+#--------------------------------------------
+# (((((((((pp_lag_combine$new_p =  pp_lag_combine$new_p/10 )))))))))
+#--------------------------------------------
+
+# pp_lag_combine$efficiency <- pp_lag_combine$efficiency/30/24
+# pp_lag_combine$efficiency_lag1 <- pp_lag_combine$efficiency_lag1/30/24
+# pp_lag_combine$efficiency <- pp_lag_combine$efficiency * 100 
+# pp_lag_combine$efficiency_lag1 <- pp_lag_combine$efficiency_lag1*100
+# pp_lag_combine[which(pp_lag_combine$on_covid == 1),] 
+#--------------------------------------------
+# UNIT TRANSFORMATION!!!
+# pp_lag_combine$efficiency = pp_lag_combine$efficiency*100
+# pp_lag_combine$efficiency_lag1 = pp_lag_combine$efficiency_lag1*100
+#--------------------------------------------
+
+reg1 <- felm(efficiency ~ 
+               new_p + 
+               on_covid +
+               new_case +
+               # `GDP per capita` +
+               covid_lag1+
+               covid_lag1:on_covid|
+               year + month|0|plant_1 + yearmonth, 
+             data = pp_lag_combine)
+(reg1 %>% summary)
+
+library(lmtest)
+bptest(reg1)
+ #--------------------------------------------
+
+
+reg2 <- felm(efficiency ~ 
+               # capacity +
+               # city +
+               new_p +
+               on_covid +
+               new_case +
+               covid_lag1 +
+               # case_lag+
+               # `GDP per capita` +
+               # efficiency_lag1 + 
+               type_of_p +# delete this line would cause multi-insignificant. set fossil as baseline.
+               on_covid:type_of_p +
+               # new_case:type_of_p+
+               covid_lag1:on_covid|
+               # efficiency_lag1*on_covid +
+               # efficiency_lag1*new_case|
+                year + month|0|plant_1+ yearmonth,
+               # year + area3 + plant, 
+             data = pp_lag_combine)
+(reg2 %>% summary)
+# (reg1 %>% summary)
+# getwd()
+mod_stargazer("../report2/reg_7.text", reg1, reg2, type = "text", align = T, style = "aer")
+mod_stargazer("../report2/reg_2.text", reg2, reg_3, type = "text", align = T, style = "aer")
+#--------------------------------------------
 ```
 
 ```{r}
 
+reg_3 <- felm(efficiency ~ 
+                new_p + 
+                # year +
+                new_case +
+                big_five +
+                on_covid +
+                # new_case +
+                type_of_p + 
+                # case_lag+
+                covid_lag1+
+                # `GDP.per.capita` +
+                covid_lag1:on_covid +
+                # new_case:type_of_p + 
+                new_case:big_five+
+
+                # efficiency_lag1 + 
+
+                on_covid:big_five +
+                on_covid:type_of_p+
+           
+               big_five:type_of_p +
+                big_five:on_covid:type_of_p|
+                month + year + area|0|plant_1 + yearmonth , data = pp_lag_combine)
+            # omit=c("big_five0:spr_festival1","big_five1:bf_covid1"))
+stg(reg_3)
+# (summary(reg_3)$coef) %>% grep("*")
+(summary(reg_3)$coef)
+```
+```{r}
+re3_plot_real <- re3_plot[re3_plot$rownames %in% c("on_covid1", "big_five:on_covid1", "big_five:on_covid1:type_of_pphotovoltaic", "big_five:on_covid1:type_of_pwind","on_covid1:type_of_pphotovoltaic", "on_covid1:type_of_pwind"),]
+
+re3_plot <- (summary(reg_3)$coef) %>% as.data.frame
+re3_plot$rownames <- rownames(re3_plot)
+# re3_plot <- re3_plot %>% separate(rownames, into = c("big5", "on_covid", "type"), sep = "\\:")
+re3_plot
+#--------------------------------------------
+# for non big 5 non covid
+
+nbplot1 <- re3_plot[c("type_of_pphotovoltaic", "type_of_pwind","on_covid1:type_of_pphotovoltaic", "on_covid1:type_of_pwind"), ]
+nbplot1[, c(1,5)]
+
+nbplot2 <- (re3_plot[c("type_of_pphotovoltaic", "type_of_pwind","on_covid1:type_of_pphotovoltaic", "on_covid1:type_of_pwind",
+           "big_five", "big_five:on_covid1", "big_five:type_of_pphotovoltaic", "big_five:type_of_pwind",
+           "big_five:on_covid1:type_of_pphotovoltaic", "big_five:on_covid1:type_of_pwind"), ])[,c(1,5)]
+
+# nbplot2[6:10,][1] -0.44693
+```
+
+```{r}
+ 
+re3_plot <- read.xlsx("../report2/effplot.xlsx")
+re3_plot$big5 = as.factor(re3_plot$big5)
+
+```
+
+
+
+
+```{r}
+ 
+re3_plotlot <-  gpt(re3_plot) + 
+  aes(x = typeofp, y = Estimate, group = typeofp, fill = typeofp) + 
+  facet_grid(cols = vars(big5),
+             scales = "free",
+             space = "free")+
+  # facet_grid(cols = vars(big5),
+  #            scales = "free",
+  #            space = "free")+
+   geom_col()  + 
+   geom_text(aes(x = typeofp, y = Estimate, label = Estimate %>% round(3)),
+            vjust = -0.3) +
+  theme(text = element_text(size =20),
+        plot.title = element_text(size = 25),
+        axis.text.x = element_text(angle = 15)) + 
+  labs(title  = "Coefficients value of model (3) (part)")
+re3_plotlot
+ggsave(filename = "../report2/reg3.png", plot = re3_plotlot, width = 12)
+```
+
+```{r}
+pp_lag_combine$big_five
+nb5_comp <- pp_lag_combine%>% group_by(big_five, type_of_p) %>% summarise(mean(efficiency))
+nb5_comp 
+```
+
+```{r}
+ggthemr('light',type = 'outer')
+nb5_comp$big_five = as.factor(nb5_comp$big_five)
+nb5_comp$`mean(efficiency)` = round(nb5_comp$`mean(efficiency)`,3 )
+pnb5_efficience <- ggplot(nb5_comp) +
+  geom_col(aes(x = type_of_p, 
+                y = `mean(efficiency)`,
+                fill = big_five),
+            size = 1,
+           position = "dodge") +
+  # scale_x_continuous(n.breaks = 6)  +
+  theme(text = element_text(size = 22),
+        plot.title = element_text(size = 25),
+        axis.text.x = element_text(angle = 0)) + 
+  labs(title  = "Mean Electricity Generating by Type_of_plant",
+       x = "Month",
+       y = "Mean efficiency generated (10k kwh)")+
+  geom_text(aes(x = type_of_p, y = `mean(efficiency)`, label = `mean(efficiency)`, group = big_five),
+            position = position_dodge2(width = .82 , preserve = "single"),
+            vjust = -.3,
+            angle = 0,
+            size = 6) +
+  scale_fill_brewer(palette = "Set3")
+pnb5_efficience 
+
+ggsave(filename = "../report2/effi-type_of_p5.png", plot = pnb5_efficience , width = 12)
+```
+
+
+```{r}
+felm(complete ~ 
+               # capacity +
+               # city +
+               
+               on_covid +
+               new_case+
+               type_of_p+# delete this line would cause multi-insignificant. set fossil as baseline.
+               on_covid:type_of_p|
+               year + month |0|yearmonth + plant_1,
+               # year + area3 + plant, 
+             data = pp_lag_combine) %>% summary
+
+recom <- felm(complete ~ 
+               # capacity +
+               new_p+
+               big_five*on_covid +
+              covid_lag1*on_covid + 
+               new_case*big_five+
+               type_of_p*big_five+# delete this line would cause multi-insignificant. set fossil as baseline.
+               on_covid:type_of_p*big_five|
+               year + month |0|yearmonth + plant_1,
+               # year + area3 + plant, 
+             data = pp_lag_combine) 
+
+mod_stargazer("../report2/reg_11.text", reg_3, recom, type = "text", align = T, style = "aer")
 ```
 
