@@ -278,26 +278,26 @@ pp_data_lingyun_capacity <- data.frame(percentage = c(52.31, 34.19, 58.5,13.74),
 
 ```{r}
 # ggthemr('light',type = 'outer')
+pp_data_my_capacity$percentage[6] = 0
+pp_data_my_capacity_plot <- gpt(pp_data_my_capacity)+
+  geom_bar(aes(x = types, weight = percentage, group = if_in_shanxi, fill = if_in_shanxi), position = 'dodge') +
+  geom_text(aes(x = types, y = percentage, label = percentage, group = if_in_shanxi),
+            position = position_dodge2(width = .82 , preserve = "single"),
+            vjust = -.3, size = 6) +
+  theme(text = element_text(size = 22),
+        plot.title = element_text(size = 25),
+        plot.subtitle = element_text(size = 19),
+        axis.text.x = element_text(angle = 0)) +
+  labs(title  = "Big-five owned plant Capacity percentage",
+       subtitle = "Comparation of China mainland vs Shanxi",
+       x = "Type of Plant",
+       y = "Percentage of Capacity") +
+  scale_fill_brewer(palette = "Set3")
+pp_data_my_capacity_plot
 # 
-# pp_data_my_capacity_plot <- gpt(pp_data_my_capacity)+
-#   geom_bar(aes(x = types, weight = percentage, group = if_in_shanxi, fill = if_in_shanxi), position = 'dodge') +
-#   geom_text(aes(x = types, y = percentage, label = percentage, group = if_in_shanxi), 
-#             position = position_dodge2(width = .82 , preserve = "single"),
-#             vjust = -.3, size = 6) +
-#   theme(text = element_text(size = 22),
-#         plot.title = element_text(size = 25),
-#         plot.subtitle = element_text(size = 19),
-#         axis.text.x = element_text(angle = 0)) + 
-#   labs(title  = "Big-five owned plant Capacity percentage",
-#        subtitle = "Comparation of China mainland vs Shanxi",
-#        x = "Type of Plant",
-#        y = "Percentage of Capacity") +
-#   scale_fill_brewer(palette = "Set3")
-# pp_data_my_capacity_plot
-# 
-# ggsave(filename = "../report/b5_capa_compare.png", plot = pp_data_my_capacity_plot, width = 9)
+ggsave(filename = "../report/b5_capa_compare.png", plot = pp_data_my_capacity_plot, width = 12)
 
-```
+``` 
 
 
 ```{r}

@@ -405,23 +405,26 @@ write.csv(pp_data_test, "./pp_data_real.csv")
 
 ```{r, warning = F}
 df <- df[!is.na(df$complete), ]
-dfp <- df %>% group_by(month, year) %>% summarise(sum(complete))
+dfp <- pp_lag_combine %>% group_by(month, year) %>% summarise(sum(complete))
 dfp <- filter(dfp, year != 16)
 dfp$year <- as.factor(dfp$year)
 
 #--------------------------------------------
 #--------------------------------------------
-names(dfpp)[2] = "sum_comp"
+# names(dfpp)[2] = "sum_comp"
 names(dfp)[3] = "sum_comp"
-dfpp$year = "20_predict"
-dfp = rbind (dfpp, dfp)
+# dfpp$year = "20_predict"
+# dfp = rbind (dfpp, dfp)
 # dfp
+dfp$sum_comp = dfp$sum_comp/ 1e6
+1e6
 ```
 
 
 ```{r}
 # dfp 2 include ml data stimulation.
-ggthemr('light',type = 'outer')
+# ggthemr('light',type = 'outer')
+# df
 p  <- ggplot(dfp) +
   geom_line(aes(x = month, 
                 y = sum_comp, 
@@ -436,16 +439,21 @@ p  <- ggplot(dfp) +
               alpha = I(1/3),
               shape = 17,
             size = 1.8) +
-  scale_x_continuous(n.breaks = 12)  +
-  theme(text = element_text(size =16),
-        plot.title = element_text(size = 25)) + 
-  labs(title  = "Power-plant electricity generated",
-       x = "month",
-       y = "sum energy generated per month")
+  theme_minimal()+
+  # scale_x_continuous(n.breaks = 12)  +
+  theme(text = element_text(size =22),
+        plot.title = element_text(size = 25),
+        axis.title = element_text(size = 22),
+        legend.text = element_text(size = 21),
+        # legend.key.size = 21,
+        axis.text = element_text(size = 21),
+        plot.subtitle = element_text(size = 19)) + 
+  labs(x = "month",
+       y = "sum energy generated per month (gWh)") 
 p
 
 
-# ggsave(filename = "./el-gen.png", plot = p, width = 12)
+ggsave(filename = "../report2/el-gen.png", plot = p, width = 12)
 
 # gg theme assist
 ```

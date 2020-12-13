@@ -153,8 +153,8 @@ pp_lag <- pp_lag %>% filter(year != 20 | (year == 20 & month != 7))
 # pp_lag[which(pp_lag$year == 20),] 
 pp_lag %>% select(efficiency, plant_1, year, month)
 
-pp_lag_combine <- merge((pp_lag %>% select(efficiency, plant_1, year, month)), pp_new, 
-                        by = c("plant_1", "year", "month"))
+pp_lag_combine <- merge((pp_lag %>% select(efficiency, plant_1, year, month)), pp_new2, 
+                        by = c("plant_1", "year", "month"), all = T)
 pp_lag_combine %>% names
 names(pp_lag_combine)[28] <- "efficiency"
 
@@ -164,9 +164,10 @@ names(pp_lag_combine)[4] <- "efficiency_lag1"
 # pp_new[pp_new$X == 386,]
 pp_lag_combine$efficiency %>% range
 
-#--------------------------------------------
 
-# pp_lag_combine =pp_lag_combine_test 
+pp_lag_combine <- pp_lag_combine[!is.na(pp_lag_combine$efficiency) == T, ] 
+#--------------------------------------------
+# pp_lag_combine_test=pp_lag_combine 
 # pp_lag_combine_test$efficiency = pp_lag_combine_test$efficiency/24/30
 ```
 
@@ -180,24 +181,28 @@ pp_lag_combine$covid_lag1 = 0
 pp_lag_combine[which(pp_lag_combine$on_covid == 1),]$covid_lag1 = 1
 
 
-pp_lag_combine$year %>% unique
+pp_lag_combine[pp_lag_combine$year == 20,]
+#--------------------------------------------
 
 pp_lag_combine[which(pp_lag_combine$yearmonth == "Jan 2020"),]$covid_lag1 = 0
-pp_lag_combine[which(pp_lag_combine$yearmonth == "Jun 2020"),]$covid_lag1 = 0
+pp_lag_combine[which(pp_lag_combine$yearmonth == "Jun 2020"),]$covid_lag1 = 1
 pp_lag_combine[which(pp_lag_combine$yearmonth == "Jun 2020"),]$on_covid = 0
-pp_lag_combine[which(pp_lag_combine$yearmonth == "May 2020"),]$on_covid = 0
-pp_lag_combine[which(pp_lag_combine$yearmonth == "Jan 2020"),]$on_covid = "1"
+pp_lag_combine[which(pp_lag_combine$yearmonth == "May 2020"),]$on_covid = 1
+pp_lag_combine[which(pp_lag_combine$yearmonth == "Feb 2020"),]$covid_lag1 = 1
 # pp_lag_combine[which(pp_lag_combine$on_covid == 1),]$month %>% unique
+pp_lag_combine[which(pp_lag_combine$yearmonth == "Jan 2020"),]$on_covid = 1
 
 pp_lag_combine$covid_lag1 = as.factor(pp_lag_combine$covid_lag1)
 pp_lag_combine$on_covid = as.factor(pp_lag_combine$on_covid)
+
+#--------------------------------------------
 
 pp_lag_combine[which(pp_lag_combine$covid_lag1 == 1),]$yearmonth %>% unique
 
 pp_lag_combine$month = as.factor(pp_lag_combine$month)
 pp_lag_combine$year = as.factor(pp_lag_combine$year)
 
-# pp_lag_combine
+# dataforsave <- pp_lag_combine
 #--------------------------------------------
 
 pp_lag_combine$capacity %>% range
@@ -206,9 +211,9 @@ pp_lag_combine$complete %>% range
 # pp_lag_combine = pp_lag_combine[-which(pp_lag_combine$complete<0),]
 # (pp_lag_combine$complete/pp_lag_combine$capacity) %>% range
 
-
-pp_lag_combine$year = pp_lag_combine$year %>% as.numeric()
-pp_lag_combine <- merge((pp_lag_combine %>% group_by(yearmonth) %>% summarise(mean(efficiency))), pp_lag_combine, by = "yearmonth")
+# pp_lag_combine$year
+pp_lag_combine$year = pp_lag_combine$year %>% as.numeric() +16
+pp_lag_combine <- merge((pp_lag_combine %>% group_by(yearmonth) %>% summarise(mean(efficiency))), pp_lag_combine, by = "yearmonth", all =T)
 
 pp_lag_combine$year = pp_lag_combine$year %>% as.factor()
 p_eff_sum <- gpt(pp_lag_combine) + 
@@ -223,6 +228,9 @@ ggsave(filename = "../report2/p_eff_mean.png", plot = p_eff_sum, width = 12)
 
 
 pp_lag_combine_test =  pp_lag_combine
+# 
+# pp_lag_combine
+# which(pp_new$year == 16)
 ```
 
 
@@ -236,9 +244,9 @@ covid_sx_monthly$month[6] = 1
 names(covid_sx_monthly)[2] = "lag_case"
 
 covid_sx_monthly = covid_sx_monthly[-7,]
-covid_sx_monthly$year = "4" %>% as.factor()
+covid_sx_monthly$year = "20" %>% as.factor()
 pp_lag_combine
-merge(covid_sx_monthly, pp_lag_combine, by = c("year", "month")) 
+merge(covid_sx_monthly, pp_lag_combine, by = c("year", "month"))
 pp_lag_combine$month= as.numeric(pp_lag_combine$month)
 
 for (i in 1:6){
@@ -258,6 +266,8 @@ pp_lag_combine[which(pp_lag_combine$yearmonth == "May 2020"),]$case_lag = 61
 pp_lag_combine[which(pp_lag_combine$yearmonth == "Jun 2020"),]$case_lag = 1
 pp_lag_combine$case_lag %>% unique
 write.csv(pp_lag_combine, file = "../report2/pp_lag_combine.csv")
+
+pp_lag_combine[pp_lag_combine$year == 20, ] %>% View
 ```
 
 #--------------------------------------------
@@ -288,7 +298,7 @@ reg_3 <- felm(efficiency ~
                 type_of_p + 
                 case_lag+
                 covid_lag1+
-                `GDP.per.capita` +
+                # `GDP.per.capita` +
 
                 new_case:type_of_p + 
                 new_case:big_five+
@@ -442,6 +452,8 @@ pcount$month <- match(substr(pcount$yearmonth, 1,3), month.abb)
 pcount <- pcount[order(pcount$year, pcount$month),]
 
 
+
+write.csv(pcount, file = "../report2/pcount.csv")
 # grep("Sep",pp_data_test$yearmonth , value = T) %>% unique
 
 # which(pp_lag_combine$yearmonth == "Sep 2017")
@@ -457,7 +469,7 @@ pcount <- pcount[order(pcount$year, pcount$month),]
 names(pcount)[2] = "num_p"
 pcount$year = pcount$year -2000
 # pp_lag_combine <- merge(pcount, pp_lag_combine, by = c("yearmonth","year",  "month"))
-pp_lag_combine
+pp_lag_combine$year %>% unique
 pp_lag_combine$year = pp_lag_combine$year %>% as.numeric + 16
 pp_lag_combine$year <- pp_lag_combine$year %>% as.factor()
 
@@ -475,7 +487,7 @@ for (i in 2:dim(pcount)[1]){
 pcount$new_p[1] = 204-211
 
 pcount 
-pp_lag_combine <- merge(pcount, pp_lag_combine, by = c("yearmonth","year",  "month"))
+pp_lag_combine <- merge(pcount, pp_lag_combine_test, by = c("yearmonth","year",  "month"), all = T)
 pp_lag_combine$yearmonth %>% unique
 
 # pp_lag_combine[which(pp_lag_combine$yearmonth == "Oct 2017"),]
@@ -493,14 +505,16 @@ pp_lag_combine[pp_lag_combine$spr_festival == 1, ] %>% group_by(year) %>% slice(
 
 
 ```{r}
-pp_lag_combine$efficiency_lag1 %>% range
+pp_lag_combine[which(is.na(pp_lag_combine$covid_lag1) == T), ]
+
+pp_lag_combine[pp_lag_combine$covid_lag1 == 1, ] %>% View
 #--------------------------------------------
 # (((((((((pp_lag_combine$new_p =  pp_lag_combine$new_p/10 )))))))))
 #--------------------------------------------
 
 # pp_lag_combine$efficiency <- pp_lag_combine$efficiency/30/24
 # pp_lag_combine$efficiency_lag1 <- pp_lag_combine$efficiency_lag1/30/24
-# pp_lag_combine$efficiency <- pp_lag_combine$efficiency * 100 
+# pp_lag_combine$efficiency <- pp_lag_combine$efficiency * 100
 # pp_lag_combine$efficiency_lag1 <- pp_lag_combine$efficiency_lag1*100
 # pp_lag_combine[which(pp_lag_combine$on_covid == 1),] 
 #--------------------------------------------
@@ -508,17 +522,18 @@ pp_lag_combine$efficiency_lag1 %>% range
 # pp_lag_combine$efficiency = pp_lag_combine$efficiency*100
 # pp_lag_combine$efficiency_lag1 = pp_lag_combine$efficiency_lag1*100
 #--------------------------------------------
-
-pp_lag_combine %>% names
+ 
+pp_lag_combine %>% str 
 reg1 <- felm(efficiency ~ 
                new_p + 
                on_covid +
                new_case +
-               # case_lag + 
+               # case_lag +
                covid_lag1+
+               # covid_lag1:0+
                spr_festival +
                covid_lag1:on_covid|
-               year + month|0|plant_1 + yearmonth, 
+               plant_1+month|0|plant_1 + yearmonth, 
              data = pp_lag_combine)
 (reg1 %>% summary)
 
@@ -540,11 +555,12 @@ reg2 <- felm(efficiency ~
                # efficiency_lag1 + 
                type_of_p + # delete this line would cause multi-insignificant. set fossil as baseline.
                on_covid:type_of_p +
+               spr_festival+
                # new_case:type_of_p+
                covid_lag1:on_covid|
                
                # efficiency_lag1*new_case|
-                year + month|0|plant_1+ yearmonth,
+                month |0|plant_1 + yearmonth ,
                # year + area3 + plant, 
              data = pp_lag_combine)
 (reg2 %>% summary)
@@ -565,10 +581,11 @@ reg_3 <- felm(efficiency ~
                 on_covid +
                 # new_case +
                 type_of_p + 
+                spr_festival + 
                 # case_lag+
                 covid_lag1+
                 # `GDP.per.capita` +
-                covid_lag1:on_covid +
+                # covid_lag1:on_covid +
                 # new_case:type_of_p + 
                 new_case:big_five+
 
@@ -586,12 +603,12 @@ stg(reg_3)
 (summary(reg_3)$coef)
 ```
 ```{r}
-re3_plot_real <- re3_plot[re3_plot$rownames %in% c("on_covid1", "big_five:on_covid1", "big_five:on_covid1:type_of_pphotovoltaic", "big_five:on_covid1:type_of_pwind","on_covid1:type_of_pphotovoltaic", "on_covid1:type_of_pwind"),]
+re3_plot_real <- re3_plot[re3_plot$rownames %in% c("on_covid1", "big_five1:on_covid1", "big_five1:on_covid1:type_of_pphotovoltaic", "big_five1:on_covid1:type_of_pwind","on_covid1:type_of_pphotovoltaic", "on_covid1:type_of_pwind"),]
 
 re3_plot <- (summary(reg_3)$coef) %>% as.data.frame
 re3_plot$rownames <- rownames(re3_plot)
 # re3_plot <- re3_plot %>% separate(rownames, into = c("big5", "on_covid", "type"), sep = "\\:")
-re3_plot
+re3_plot_real
 #--------------------------------------------
 # for non big 5 non covid
 
