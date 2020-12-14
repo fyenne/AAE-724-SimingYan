@@ -979,10 +979,8 @@ ttloss$`GDP loss` <- ttloss$`GDP loss`/100 #billion
 ttloss$`GDP loss` <- ttloss$`GDP loss` %>% round(3)
 ttlossplot <- ggplot(ttloss) +
   geom_col(aes(x = `city name`, 
-                y = `GDP loss`,
-                fill = `city name`),
             size = 1,
-           position = "dodge") +
+           position = "dodge")) +
   theme_minimal() +
   # scale_x_continuous(n.breaks = 6)  +
   theme(text = element_text(size = 22),
