@@ -923,9 +923,12 @@ predict_testNN = (predict_testNN$net.result * (max(pppd$GDP) - min(pppd$GDP))) +
 
 pppd_af$GDP = (pppd_af$GDP * (max(pppd$GDP) - min(pppd$GDP))) + min(pppd$GDP)
 pppd_af$GDPperMonth = (pppd_af$GDPperMonth * (max(pppd$GDPperMonth) - min(pppd$GDPperMonth))) + min(pppd$GDPperMonth)
-pppd_af$`GDP per capita` = (pppd_af$`GDP per capita`  * (max(pppd$`GDP per capita` ) - min(pppd$`GDP per capita` ))) + min(pppd$`GDP per capita` )
+# pppd_af$`GDP per capita` = (pppd_af$`GDP per capita`  * (max(pppd$`GDP per capita` ) - min(pppd$`GDP per capita` ))) + min(pppd$`GDP per capita` )
 ```
 
+
+#--------------------------------------------
+# 7.2 gdp loss plot
 ```{r}
 nnplot1 <- ggplot(cbind(pp_test$GDP, predict_testNN) %>% data.frame()) + 
   aes( x = pp_test$GDP, y = predict_testNN) + 
@@ -950,10 +953,14 @@ pppd_af_new %>% View
 pppd_af_new$differ <- pppd_af_new$`predict_testNN/2` - pppd_af_new$GDP
 
 pppd_af_new$differ # total diff, monthly /6
+ttloss <- cbind(pppd$area3[1:11], pppd_af_new$differ ) %>% data.frame()
+names(ttloss) = c("city name", "GDP loss")
+
+ttloss$`GDP loss` = ttloss$`GDP loss` %>% as.numeric()/6
 #--------------------------------------------
 
 
-
+#capita 
 pppd_af_new
 renkou20 <- pppd_af$GDP/ pppd_af$`GDP per capita`
 difpercaGDP20 <- pppd_af_new$differ/renkou20
@@ -965,6 +972,35 @@ cbind(pppd$area3[1:11],difpercaGDP20 ) %>% data.frame()
 pppd$`GDP per capita`
 ```
 
+```{r}
+ttloss$`GDP loss` <- ttloss$`GDP loss` %>% round(3)/1000 %>% round(3)
+ttloss$`GDP loss` <- ttloss$`GDP loss`   %>% round(3)
+ttloss$`GDP loss` <- ttloss$`GDP loss`/100 #billion
+ttloss$`GDP loss` <- ttloss$`GDP loss` %>% round(3)
+ttlossplot <- ggplot(ttloss) +
+  geom_col(aes(x = `city name`, 
+                y = `GDP loss`,
+                fill = `city name`),
+            size = 1,
+           position = "dodge") +
+  # scale_x_continuous(n.breaks = 6)  +
+  theme(text = element_text(size = 22),
+        plot.title = element_text(size = 25),
+        axis.text.x = element_text(angle = 24)) + 
+  labs(title  = "Regional Monthly GDP loss in Billion Yuan",
+       x = "Region names",
+       y = "GDP per month loss in Billion Yuan")+
+  geom_text(aes(x = `city name`, y =  `GDP loss`, label =  `GDP loss`),
+            position = position_dodge2(width = .82 , preserve = "single"),
+            vjust = -.3,
+            angle = 0,
+            size = 6) +
+  scale_fill_brewer(palette = "Set3")
+
+ggsave("../report2/region_gdploss.png", ttlossplot, width = 12)
+
+
+```
 
 
 ```{r}
