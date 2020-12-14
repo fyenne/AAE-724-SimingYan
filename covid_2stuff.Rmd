@@ -983,11 +983,12 @@ ttlossplot <- ggplot(ttloss) +
                 fill = `city name`),
             size = 1,
            position = "dodge") +
+  theme_minimal() +
   # scale_x_continuous(n.breaks = 6)  +
   theme(text = element_text(size = 22),
         plot.title = element_text(size = 25),
         axis.text.x = element_text(angle = 24)) + 
-  labs(title  = "Regional Monthly GDP loss in Billion Yuan",
+  labs(title  = "",
        x = "Region names",
        y = "GDP per month loss in Billion Yuan")+
   geom_text(aes(x = `city name`, y =  `GDP loss`, label =  `GDP loss`),
