@@ -185,11 +185,27 @@ our_summary1 <-
 st1 <- summary_table(group_by(pp_data, type_of_p), our_summary1) %>% kbt %>% 
   add_header_above(header = c("Observations Level Summary over Type of Plants" = 5), bold = T, font_size = 18)
 # st1 %>% as_image(file = "../table_1.png", width = 22)
- summary_table(group_by(pp_data, type_of_p), our_summary1) %>% data.frame() %>% write.csv("./summar_1.csv")
+# summary_table(group_by(pp_data, type_of_p), our_summary1) %>% data.frame() %>% write.csv("./summar_1.csv")
 #--------------------------------------------
 # save_kable(st1, file = "../report/table_1.png", zoom = 4)
 
 # webshot::install_phantomjs()# sjplot(pp_data, fun = "grpfrq")
+ 
+our_summary101 <-
+  list("Plant" =
+       list("Unique Names of Plants" = ~ length(unique(plant_1))),
+      "Electricity generated per month" =
+       list("Electricity generated per month" = ~ print(""),
+            "min"       = ~ min(efficiency),
+            "median"    = ~ median(efficiency) %>% round(3),
+            "max"       = ~ max(efficiency)%>% round(3),
+            "mean (sd)" = ~ qwraps2::mean_sd(efficiency))
+  )
+st101 <- summary_table(group_by(pp_lag_combine, type_of_p), our_summary101) %>% kbt %>%
+  add_header_above(header = c("Observations Level Summary over Type of Plants(2)" = 4), bold = T, font_size = 18)
+st101
+
+summary_table(group_by(pp_lag_combine, type_of_p), our_summary101) %>% data.frame() %>% write.csv("../report2/summar_101.csv")
 ```
 <!-- $$\pm$$ -->
 

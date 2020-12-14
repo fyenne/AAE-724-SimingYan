@@ -345,3 +345,15 @@ library(tidyr)
  tidyr::separate((test_OCR %>% data.frame),., into = c("1", "2", "3"), sep = "//S")
 ```
 
+
+
+```{r}
+renkou <- shanxiGDP %>% group_by(year, area3) %>% summarise(GDP/`GDP per capita`)
+names(renkou)[3] = "renkou"
+shanxiGDP <- merge(shanxiGDP, renkou, by = c("year", "area3"))
+
+pp_new %>% names
+
+ # "capacity" 
+```
+
